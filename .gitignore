@@ -1,5 +1,6 @@
 test-results/
 .vscode
+out
 
 # Logs
 logs
