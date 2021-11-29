@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Visual regression testing library for PDFs in Js/Ts",
   "keywords": [
     "pdf",
@@ -39,18 +39,18 @@
     "tsc": "tsc --pretty"
   },
   "dependencies": {
-    "pdf-to-png-converter": "0.0.6",
-    "png-visual-compare": "0.4.2"
+    "pdf-to-png-converter": "0.0.8",
+    "png-visual-compare": "0.4.5"
   },
   "devDependencies": {
-    "@types/jest": "27.0.2",
-    "@types/node": "16.11.6",
-    "@typescript-eslint/eslint-plugin": "5.2.0",
-    "@typescript-eslint/parser": "5.2.0",
-    "eslint": "8.1.0",
-    "jest": "27.3.1",
+    "@types/jest": "27.0.3",
+    "@types/node": "16.11.10",
+    "@typescript-eslint/eslint-plugin": "5.4.0",
+    "@typescript-eslint/parser": "5.4.0",
+    "eslint": "8.3.0",
+    "jest": "27.4.0",
     "ts-jest": "27.0.7",
     "ts-node": "10.4.0",
-    "typescript": "4.4.4"
+    "typescript": "4.5.2"
   }
 }
