@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Visual regression testing library for PDFs in Js/Ts",
   "keywords": [
     "pdf",
@@ -17,7 +17,7 @@
     "url": "git+https://github.com/dichovsky/pdf-visual-compare.git"
   },
   "license": "MIT",
-  "author": "Igor Magdich",
+  "author": "Igor Magdich <magdich.igor@gmail.com>",
   "main": "out/index.js",
   "types": "out/index.d.ts",
   "files": [
@@ -39,18 +39,18 @@
     "tsc": "tsc --pretty"
   },
   "dependencies": {
-    "pdf-to-png-converter": "0.0.8",
-    "png-visual-compare": "0.4.5"
+    "pdf-to-png-converter": "0.0.9",
+    "png-visual-compare": "0.4.6"
   },
   "devDependencies": {
     "@types/jest": "27.0.3",
-    "@types/node": "16.11.10",
-    "@typescript-eslint/eslint-plugin": "5.4.0",
-    "@typescript-eslint/parser": "5.4.0",
-    "eslint": "8.3.0",
-    "jest": "27.4.0",
-    "ts-jest": "27.0.7",
+    "@types/node": "16.11.12",
+    "@typescript-eslint/eslint-plugin": "5.7.0",
+    "@typescript-eslint/parser": "5.7.0",
+    "eslint": "8.4.1",
+    "jest": "27.4.5",
+    "ts-jest": "27.1.1",
     "ts-node": "10.4.0",
-    "typescript": "4.5.2"
+    "typescript": "4.5.4"
   }
 }
