@@ -1,9 +1,9 @@
-import { Area, Color } from ".";
+import { Area, Color } from '.';
 
-export type ExcludedPageArea  = {
+export type ExcludedPageArea = {
     pageNumber: number;
     excludedAreas?: Area[];
     excludedAreaColor?: Color;
     diffFilePath?: string;
     matchingThreshold?: number;
-}
+};

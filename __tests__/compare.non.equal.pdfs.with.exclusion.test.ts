@@ -20,16 +20,16 @@ test(`Compare non equal PDF files with excluded areas`, async () => {
                     },
                 ],
             },
-            { 
-                pageNumber: 1, 
+            {
+                pageNumber: 1,
                 excludedAreas: [
-                    { 
-                        x1: 680, 
-                        y1: 240, 
-                        x2: 955, 
+                    {
+                        x1: 680,
+                        y1: 240,
+                        x2: 955,
                         y2: 465,
-                    }
-                ] 
+                    },
+                ],
             },
         ],
     });

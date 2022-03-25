@@ -1,8 +1,7 @@
-
-import { PdfToPngOptions, ExcludedPageArea } from '.';
+import { ExcludedPageArea, PdfToPngOptions } from '.';
 
 export type ComparePdfOptions = {
     diffsOutputFolder?: string;
-    pdfToPngConvertOptions?: PdfToPngOptions,
+    pdfToPngConvertOptions?: PdfToPngOptions;
     excludedAreas: ExcludedPageArea[];
 };
