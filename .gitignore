@@ -1,6 +1,7 @@
 test-results/
+comparePdfOutput/
 .vscode
-out
+out/
 
 # Logs
 logs

@@ -1,7 +1,7 @@
 {
   "name": "pdf-visual-compare",
-  "version": "0.0.10",
-  "description": "Visual regression testing library for PDFs in Js/Ts",
+  "version": "1.0.0",
+  "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
     "pdf regression",
@@ -39,7 +39,7 @@
     "tsc": "tsc --pretty"
   },
   "dependencies": {
-    "pdf-to-png-converter": "0.2.5",
+    "pdf-to-png-converter": "1.0.0",
     "png-visual-compare": "0.4.12"
   },
   "devDependencies": {
