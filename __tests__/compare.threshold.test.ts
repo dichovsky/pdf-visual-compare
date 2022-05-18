@@ -1,6 +1,6 @@
 import comparePdf from '../src/compare.pdf';
 
-const actualDiffsAmount = 14109;
+const actualDiffsAmount = 14102;
 
 test(`should return false for non equal PDF files with threshold less than specified`, async () => {
   const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
