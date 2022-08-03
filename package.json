@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
