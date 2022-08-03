@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "build": "npm run clean && npm run tsc",
-    "clean": "rimraf ./out ./coverage ./test-results",
+    "clean": "rimraf ./out ./coverage ./test-results ./comparePdfOutput",
     "docker:build": "docker build --compress -t test-pdf-visual-compare .",
     "predocker:run": "npm run clean",
     "docker:run": "docker run --rm -it -v ./test-results:/usr/pkg/test-results test-pdf-visual-compare",
@@ -33,7 +33,7 @@
     "license-checker": "npx license-checker --production --onlyAllow 'MIT; MIT OR X11; BSD; ISC; Apache-2.0; Unlicense'",
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
-    "pretest": "npm run clean",
+    "pretest": "npm run build",
     "test": "jest",
     "test:docker": "npm run docker:build && npm run docker:run",
     "tsc": "tsc --pretty"

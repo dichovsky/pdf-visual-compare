@@ -2,7 +2,7 @@ import { existsSync } from 'fs';
 import { resolve } from 'path';
 import { pdfToPng, PngPageOutput } from 'pdf-to-png-converter';
 import comparePng, { ComparePngOptions } from 'png-visual-compare';
-import { ComparePdfOptions, PdfToPngOptions } from './types';
+import { ComparePdfOptions, ExcludedPageArea, PdfToPngOptions } from './types';
 
 export default async function comparePdf(
   actualPdfFilePathOrBuffer: string | ArrayBufferLike,
@@ -17,17 +17,21 @@ export default async function comparePdf(
     throw Error('Expected PDF file not found.');
   }
 
-  const pdfToPngConvertOpts: PdfToPngOptions = opts?.pdfToPngConvertOptions ?? {
-    viewportScale: 2.0,
-    outputFileMask: 'comparePdf',
-  };
+  const pdfToPngConvertOpts: PdfToPngOptions = {...opts?.pdfToPngConvertOptions };
+  if (!pdfToPngConvertOpts.viewportScale) {
+    pdfToPngConvertOpts.viewportScale = 2.0
+  }
+  if (!pdfToPngConvertOpts.outputFileMask) {
+    pdfToPngConvertOpts.outputFileMask = 'comparePdf'
+  }
+
   const diffsOutputFolder: string = opts?.diffsOutputFolder 
     ? opts.diffsOutputFolder 
     : resolve(`./comparePdfOutput`);
   const compareThreshold: number = opts?.compareThreshold 
     ? opts?.compareThreshold 
     : 0;
-  const excludedAreas = opts?.excludedAreas 
+  const excludedAreas: ExcludedPageArea[] = opts?.excludedAreas 
     ? opts.excludedAreas 
     : [];
   if (compareThreshold < 0) {
@@ -43,20 +47,18 @@ export default async function comparePdf(
     return false;
   }
 
-  let overallCompareResult = true;
+  let documentCompareResult = true;
   actualPdfPngPages.forEach((actualPdfPngPage, index) => {
     const comparePngOpts: ComparePngOptions = { ...opts?.pdfToPngConvertOptions, ...excludedAreas[index] };
     comparePngOpts.diffFilePath = resolve(diffsOutputFolder, `diff_${actualPdfPngPage.name}`);
 
-    const expectedPdfPngPage = expectedPdfPngPages.find(
-      (expectedPdfPngPage) => expectedPdfPngPage.name === actualPdfPngPage.name,
-    ) as PngPageOutput;
-    const compareResult: number = comparePng(actualPdfPngPage.content, expectedPdfPngPage.content, comparePngOpts);
+    const expectedPngPageOutput: PngPageOutput = expectedPdfPngPages.find((p) => p.name === actualPdfPngPage.name) as PngPageOutput;
+    const pageCompareResult: number = comparePng(actualPdfPngPage.content, expectedPngPageOutput.content, comparePngOpts);
 
-    if (compareResult > compareThreshold) {
-      overallCompareResult = false;
+    if (pageCompareResult > compareThreshold) {
+      documentCompareResult = false;
     }
   });
 
-  return overallCompareResult;
+  return documentCompareResult;
 }
