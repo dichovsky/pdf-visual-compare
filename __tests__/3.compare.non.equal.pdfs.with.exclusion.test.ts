@@ -1,3 +1,4 @@
+import { resolve } from 'path';
 import comparePdf from '../src/compare.pdf';
 
 test(`should return true for non equal PDF files with excluded areas`, async () => {
@@ -32,6 +33,7 @@ test(`should return true for non equal PDF files with excluded areas`, async () 
         ],
       },
     ],
+    diffsOutputFolder: resolve(`./test-results/compare/3-1`),
   });
 
   expect(compareResult).toBeTruthy();
