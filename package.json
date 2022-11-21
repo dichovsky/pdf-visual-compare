@@ -28,7 +28,7 @@
     "clean": "rimraf ./out ./coverage ./test-results ./comparePdfOutput",
     "docker:build": "docker build --compress -t test-pdf-visual-compare .",
     "predocker:run": "npm run clean",
-    "docker:run": "docker run --rm -it -v ./test-results:/usr/pkg/test-results test-pdf-visual-compare",
+    "docker:run": "docker run --rm -it -v test-results:/usr/pkg/test-results test-pdf-visual-compare",
     "docker:test": "jest",
     "license-checker": "npx license-checker --production --onlyAllow 'MIT; MIT OR X11; BSD; ISC; Apache-2.0; Unlicense'",
     "lint": "eslint .",
