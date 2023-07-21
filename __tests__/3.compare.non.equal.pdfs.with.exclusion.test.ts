@@ -1,4 +1,4 @@
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 import comparePdf from '../src/compare.pdf';
 
 test(`should return true for non equal PDF files with excluded areas`, async () => {

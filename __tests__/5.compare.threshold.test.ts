@@ -1,4 +1,4 @@
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 import comparePdf from '../src/compare.pdf';
 
 const actualDiffsAmount = 14102;

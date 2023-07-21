@@ -22,7 +22,7 @@ npm install -D pdf-visual-compare
   const result: boolean = await comparePdf('./pdf1.pdf', './pdf2.pdf', {
   diffsOutputFolder?: string; // Folder to write output PNG files with differences
   pdfToPngConvertOptions?: {
-    viewportScale: 2.0, // The desired scale of PNG viewport. Default value is 1.0.
+    viewportScale: 2.0, // The desired scale of PNG viewport. Default value is 2.0.
     disableFontFace: false, //When `false`, fonts will be rendered using a built-in font renderer that constructs the glyphs with primitive path commands. Default value is true.
     useSystemFonts: false, // When `true`, fonts that aren't embedded in the PDF document will fallback to a system font. Default value is false.
     pdfFilePassword: 'pa$$word', // Password for encrypted PDF.
