@@ -1,3 +1,4 @@
+import { expect, test } from 'vitest';
 import comparePdf from '../src/compare.pdf';
 
 test(`should return true for equal PDF files`, async () => {
