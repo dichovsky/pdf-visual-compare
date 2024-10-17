@@ -5,6 +5,15 @@ import comparePng, { ComparePngOptions } from 'png-visual-compare';
 import { DEFAULT_DIFFS_FOLDER } from './const';
 import { ComparePdfOptions, ExcludedPageArea, PdfToPngOptions } from './types';
 
+/**
+ * Compares two PDF files or buffers and returns a boolean indicating whether they are similar.
+ *
+ * @param actualPdfFilePathOrBuffer - The file path or buffer of the actual PDF to compare.
+ * @param expectedPdfFilePathOrBuffer - The file path or buffer of the expected PDF to compare against.
+ * @param opts - Optional comparison options.
+ * @returns A promise that resolves to a boolean indicating whether the PDFs are similar.
+ * @throws Will throw an error if the compare threshold is less than 0.
+ */
 export default async function comparePdf(
   actualPdfFilePathOrBuffer: string | ArrayBufferLike,
   expectedPdfFilePathOrBuffer: string | ArrayBufferLike,
@@ -17,8 +26,8 @@ export default async function comparePdf(
   if (!pdfToPngConvertOpts.viewportScale) {
     pdfToPngConvertOpts.viewportScale = 2.0;
   }
-  if (!pdfToPngConvertOpts.outputFileMask) {
-    pdfToPngConvertOpts.outputFileMask = 'comparePdf';
+  if (!pdfToPngConvertOpts.outputFileMaskFunc) {
+    pdfToPngConvertOpts!.outputFileMaskFunc = (pageNumber: number) => `comparePdf_${pageNumber}.png`;
   }
 
   const diffsOutputFolder: string = opts?.diffsOutputFolder ? opts.diffsOutputFolder : DEFAULT_DIFFS_FOLDER;
