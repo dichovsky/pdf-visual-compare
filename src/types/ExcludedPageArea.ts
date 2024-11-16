@@ -1,4 +1,4 @@
-import { Area, Color } from '.';
+import { Area, Color } from 'png-visual-compare';
 
 export type ExcludedPageArea = {
   pageNumber: number;

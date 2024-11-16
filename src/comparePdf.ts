@@ -1,9 +1,10 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { pdfToPng, PngPageOutput } from 'pdf-to-png-converter';
+import { pdfToPng, PngPageOutput, PdfToPngOptions } from 'pdf-to-png-converter';
 import comparePng, { ComparePngOptions } from 'png-visual-compare';
-import { DEFAULT_DIFFS_FOLDER } from './const';
-import { ComparePdfOptions, ExcludedPageArea, PdfToPngOptions } from './types';
+import { DEFAULT_DIFFS_FOLDER } from './const.js';
+import { ComparePdfOptions } from './types/ComparePdfOptions.js';
+import { ExcludedPageArea } from './types/ExcludedPageArea.js';
 
 /**
  * Compares two PDF files or buffers and returns a boolean indicating whether they are similar.
@@ -14,7 +15,7 @@ import { ComparePdfOptions, ExcludedPageArea, PdfToPngOptions } from './types';
  * @returns A promise that resolves to a boolean indicating whether the PDFs are similar.
  * @throws Will throw an error if the compare threshold is less than 0.
  */
-export default async function comparePdf(
+export async function comparePdf(
   actualPdfFilePathOrBuffer: string | ArrayBufferLike,
   expectedPdfFilePathOrBuffer: string | ArrayBufferLike,
   opts?: ComparePdfOptions,
@@ -30,9 +31,9 @@ export default async function comparePdf(
     pdfToPngConvertOpts!.outputFileMaskFunc = (pageNumber: number) => `comparePdf_${pageNumber}.png`;
   }
 
-  const diffsOutputFolder: string = opts?.diffsOutputFolder ? opts.diffsOutputFolder : DEFAULT_DIFFS_FOLDER;
-  const compareThreshold: number = opts?.compareThreshold ? opts?.compareThreshold : 0;
-  const excludedAreas: ExcludedPageArea[] = opts?.excludedAreas ? opts.excludedAreas : [];
+  const diffsOutputFolder: string = opts?.diffsOutputFolder ?? DEFAULT_DIFFS_FOLDER;
+  const compareThreshold: number = opts?.compareThreshold ?? 0;
+  const excludedAreas: readonly ExcludedPageArea[] = opts?.excludedAreas ?? [];
 
   if (compareThreshold < 0) {
     throw Error('Compare Threshold cannot be less than 0.');
