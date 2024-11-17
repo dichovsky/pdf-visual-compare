@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { expect, test } from 'vitest';
-import comparePdf from '../src';
+import { comparePdf } from '../src/comparePdf.js';
 
 test(`should throw "Actual PDF file not found" exception`, async () => {
     await expect(async () => {
