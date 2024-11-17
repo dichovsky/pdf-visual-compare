@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import comparePdf from '../src/compare.pdf';
+import { comparePdf } from '../src/comparePdf.js';
 import { expect, test } from 'vitest';
 
 test(`should return true for equal PDF buffers`, async () => {

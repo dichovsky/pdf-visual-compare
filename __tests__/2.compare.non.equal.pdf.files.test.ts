@@ -1,4 +1,4 @@
-import comparePdf from '../src/compare.pdf';
+import { comparePdf } from '../src/comparePdf.js';
 import { expect, test } from 'vitest';
 
 test(`should return false for non equal PDF files`, async () => {
