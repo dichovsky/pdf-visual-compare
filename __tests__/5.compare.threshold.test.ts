@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import comparePdf from '../src/compare.pdf';
+import { comparePdf } from '../src/comparePdf.js';
 import { expect, test } from 'vitest';
 
 const actualDiffsAmount = 14102;
