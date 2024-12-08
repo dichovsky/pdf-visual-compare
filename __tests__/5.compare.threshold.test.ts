@@ -4,7 +4,7 @@ import comparePdf from '../src';
 
 const actualDiffsAmount = 419;
 
-test.only(`should return false for non equal PDF files with threshold less than specified`, async () => {
+test(`should return false for non equal PDF files with threshold less than specified`, async () => {
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
         excludedAreas: [],
         compareThreshold: actualDiffsAmount - 1,
