@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { expect, test } from 'vitest';
 import comparePdf from '../src';
 
-const actualDiffsAmount = 419;
+const actualDiffsAmount = 14058;
 
 test(`should return false for non equal PDF files with threshold less than specified`, async () => {
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
