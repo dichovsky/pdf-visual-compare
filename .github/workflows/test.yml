@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 18, 20, 22 ]
+        node: [ 20, 22 ]
     steps:
       - uses: actions/checkout@v4
       - name: Test on Ubuntu Use Node.js ${{ matrix.node }}
@@ -23,7 +23,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        node: [ 18, 20, 22 ]
+        node: [ 20, 22 ]
     steps:
       - uses: actions/checkout@v4
       - name: Test on Windows Use Node.js ${{ matrix.node }}
