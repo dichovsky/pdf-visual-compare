@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
@@ -46,15 +46,15 @@
     "test:docker": "npm run docker:build && npm run docker:run"
   },
   "dependencies": {
-    "pdf-to-png-converter": "^3.6.1",
-    "png-visual-compare": "^2.2.1"
+    "pdf-to-png-converter": "^3.6.3",
+    "png-visual-compare": "^2.5.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.1",
-    "@typescript-eslint/eslint-plugin": "^8.17.0",
-    "@typescript-eslint/parser": "^8.17.0",
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
     "@vitest/coverage-v8": "^2.1.8",
-    "eslint": "^9.16.0",
+    "eslint": "^9.17.0",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
