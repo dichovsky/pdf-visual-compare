@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
@@ -21,8 +21,6 @@
   },
   "license": "MIT",
   "author": "Igor Magdich <magdich.igor@gmail.com>",
-  "type": "module",
-
   "main": "./out/index.js",
   "types": "./out/index.d.ts",
   "files": [
