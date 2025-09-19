@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { expect, test } from 'vitest';
-import comparePdf from '../src';
+import { comparePdf } from '../src';
 
 test(`should return true for non equal PDF files with excluded areas`, async () => {
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {

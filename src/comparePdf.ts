@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pdfToPng, PngPageOutput, PdfToPngOptions } from 'pdf-to-png-converter';
-import comparePng, { ComparePngOptions } from 'png-visual-compare';
+import { comparePng, ComparePngOptions } from 'png-visual-compare';
 import { DEFAULT_DIFFS_FOLDER } from './const.js';
 import { ComparePdfOptions } from './types/ComparePdfOptions.js';
 import { ExcludedPageArea } from './types/ExcludedPageArea.js';

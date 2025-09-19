@@ -1,5 +1,4 @@
-import { comparePdf } from './comparePdf.js';
-export default comparePdf;
+export { comparePdf } from './comparePdf.js';
 
 // export other libraries types that this project use
 export { PdfToPngOptions } from 'pdf-to-png-converter';
