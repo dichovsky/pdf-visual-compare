@@ -1,12 +1,15 @@
 {
   "name": "pdf-visual-compare",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
     "pdf regression",
     "pdf test",
-    "pdf compare"
+    "pdf compare",
+    "compare pdf",
+    "pdf diff",
+    "visual regression"
   ],
   "homepage": "https://github.com/dichovsky/pdf-visual-compare#readme",
   "bugs": {
@@ -19,12 +22,6 @@
   "license": "MIT",
   "author": "Igor Magdich <magdich.igor@gmail.com>",
   "type": "module",
-  "exports": {
-    ".": {
-      "default": "./out/index.js",
-      "types": "./out/index.d.ts"
-    }
-  },
   "main": "./out/index.js",
   "types": "./out/index.d.ts",
   "files": [
@@ -46,19 +43,19 @@
     "test:docker": "npm run docker:build && npm run docker:run"
   },
   "dependencies": {
-    "pdf-to-png-converter": "^3.6.3",
-    "png-visual-compare": "^2.5.0"
+    "pdf-to-png-converter": "~3.8.0",
+    "png-visual-compare": "~2.5.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@typescript-eslint/eslint-plugin": "^8.18.0",
-    "@typescript-eslint/parser": "^8.18.0",
-    "@vitest/coverage-v8": "^2.1.8",
-    "eslint": "^9.17.0",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.44.0",
+    "@typescript-eslint/parser": "^8.44.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.36.0",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=20",
