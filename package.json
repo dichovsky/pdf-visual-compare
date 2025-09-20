@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
@@ -34,19 +34,20 @@
     "predocker:run": "npm run clean",
     "docker:run": "docker run --rm -it -v $PWD/test-results:/usr/pkg/test-results test-pdf-visual-compare",
     "docker:test": "vitest run",
-    "license-checker": "npx license-checker --production --onlyAllow 'MIT; MIT OR X11; BSD; ISC; Apache-2.0; Unlicense'",
+    "test:license": "npx --yes license-checker --production --onlyAllow \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\"",
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
-    "pretest": "npm run clean",
+    "pretest": "npm run clean && npm run lint && npm run test:license && npm run build",
     "test": "vitest run --coverage",
     "test:docker": "npm run docker:build && npm run docker:run"
   },
   "dependencies": {
-    "pdf-to-png-converter": "~3.8.0",
-    "png-visual-compare": "~3.0.0"
+    "pdf-to-png-converter": "~3.9.0",
+    "png-visual-compare": "~3.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
+    "@types/pngjs": "^6.0.5",
     "@typescript-eslint/eslint-plugin": "^8.44.0",
     "@typescript-eslint/parser": "^8.44.0",
     "@vitest/coverage-v8": "^3.2.4",
