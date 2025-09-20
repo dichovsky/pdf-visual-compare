@@ -1,6 +1,6 @@
 {
   "name": "pdf-visual-compare",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
   "keywords": [
     "pdf",
@@ -42,7 +42,7 @@
     "test:docker": "npm run docker:build && npm run docker:run"
   },
   "dependencies": {
-    "pdf-to-png-converter": "~3.9.0",
+    "pdf-to-png-converter": "~3.9.1",
     "png-visual-compare": "~3.1.0"
   },
   "devDependencies": {
