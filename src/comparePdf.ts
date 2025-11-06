@@ -16,8 +16,8 @@ import type { ExcludedPageArea } from './types/ExcludedPageArea.js';
  * @throws Will throw an error if the compare threshold is less than 0.
  */
 export async function comparePdf(
-    actualPdf: string | Buffer,
-    expectedPdf: string | Buffer,
+    actualPdf: string | ArrayBufferLike,
+    expectedPdf: string | ArrayBufferLike,
     opts: ComparePdfOptions = {},
 ): Promise<boolean> {
     // Validate input file types
@@ -66,7 +66,7 @@ export async function comparePdf(
         );
 
         const pageCompareResult: number = comparePng(
-            pngPage.content,
+            pngPage.content!,
             pngPageOutputToCompareWith?.content ?? '',
             comparePngOpts,
         );
