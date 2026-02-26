@@ -4,38 +4,122 @@ Visual regression testing library for PDFs in JavaScript/TypeScript without bina
 
 [![Tests on push](https://github.com/dichovsky/pdf-visual-compare/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/dichovsky/pdf-visual-compare/actions/workflows/test.yml)
 
-## Getting Started
+## Requirements
 
-### Installation
+- Node.js >= 20
+
+## Installation
 
 ```sh
 npm install -D pdf-visual-compare
 ```
 
-### Example
+## Usage
 
-```javascript
-const result = await comparePdf('./pdf1.pdf', './pdf2.pdf');
+### Basic comparison
 
-// If you want to configure the comparing process, use the following options
+```typescript
+import { comparePdf } from 'pdf-visual-compare';
 
-const result = await comparePdf('./pdf1.pdf', './pdf2.pdf', {
-  diffsOutputFolder: 'diffs', // Folder to write output PNG files with differences
+const isEqual = await comparePdf('./actual.pdf', './expected.pdf');
+// true  → PDFs are visually identical
+// false → PDFs differ
+```
+
+### Comparison with options
+
+```typescript
+import { comparePdf } from 'pdf-visual-compare';
+
+const isEqual = await comparePdf('./actual.pdf', './expected.pdf', {
+  // Folder for diff PNG images written when differences are found. Default: ./comparePdfOutput
+  diffsOutputFolder: 'test-results/diffs',
+
+  // Maximum number of differing pixels allowed before the comparison fails.
+  // 0 = pixel-perfect match required (default). Must be >= 0.
+  compareThreshold: 200,
+
+  // Per-page exclusion zones, matched by array index (0-based).
+  // Index 0 → first page, index 1 → second page, etc.
+  // Pixel coordinates are relative to the rendered PNG at the configured viewportScale.
+  excludedAreas: [
+    {
+      pageNumber: 1,
+      excludedAreas: [
+        { x1: 700, y1: 375, x2: 790, y2: 400 }, // dynamic timestamp on page 1
+      ],
+    },
+    {
+      pageNumber: 2,
+      excludedAreas: [
+        { x1: 680, y1: 240, x2: 955, y2: 465 }, // chart on page 2
+      ],
+    },
+  ],
+
   pdfToPngConvertOptions: {
-    viewportScale: 2.0, // The desired scale of PNG viewport. Default value is 2.0.
-    disableFontFace: false, // When `false`, fonts will be rendered using a built-in font renderer that constructs the glyphs with primitive path commands. Default value is true.
-    useSystemFonts: false, // When `true`, fonts that aren't embedded in the PDF document will fallback to a system font. Default value is false.
-    pdfFilePassword: 'pa$$word', // Password for encrypted PDF.
-    outputFolder: 'output/folder', // Folder to write output PNG files. If not specified, PNG output will be available only as a Buffer content, without saving to a file.
-    outputFileMask: 'buffer', // Output filename mask. Default value is 'buffer'.
-    pagesToProcess: [1, 3, 11], // Subset of pages to convert (first page = 1), other pages will be skipped if specified.
-    strictPagesToProcess: false, // When `true`, will throw an error if specified page number in pagesToProcess is invalid, otherwise will skip invalid page. Default value is false.
-    verbosityLevel: 0 // Verbosity level. ERRORS: 0, WARNINGS: 1, INFOS: 5. Default value is 0.
+    viewportScale: 2.0,          // Rendering scale — higher means more detail. Default: 2.0.
+    disableFontFace: true,       // Use built-in font renderer. Default: true.
+    useSystemFonts: false,       // Fall back to system fonts for non-embedded fonts. Default: false.
+    enableXfa: false,            // Enable XFA form rendering. Default: false.
+    pdfFilePassword: 'pa$$word', // Password for encrypted PDFs.
+    outputFolder: 'output/pngs', // Save intermediate PNG files here. Omit to keep in memory only.
+    outputFileMaskFunc: (pageNumber) => `page_${pageNumber}.png`, // Custom PNG filename.
+    pagesToProcess: [1, 3],      // Limit comparison to specific pages (1-based). Default: all pages.
+    verbosityLevel: 0,           // 0 = errors only, 1 = warnings, 5 = info. Default: 0.
   },
-  excludedAreas: [], // Areas list to exclude from comparing for each PDF page. Empty array by default.
-  compareThreshold: 0.1 // Comparing threshold, ranges from 0 to 1. Smaller values make the comparison more sensitive. 0.1 by default.
 });
 ```
+
+### Comparing PDF buffers
+
+Both file paths and `Buffer` instances are accepted as inputs:
+
+```typescript
+import { readFileSync } from 'node:fs';
+import { comparePdf } from 'pdf-visual-compare';
+
+const actual = readFileSync('./actual.pdf');
+const expected = readFileSync('./expected.pdf');
+
+const isEqual = await comparePdf(actual, expected);
+```
+
+## API
+
+### `comparePdf(actualPdf, expectedPdf, options?)`
+
+| Parameter     | Type                              | Description                               |
+| ------------- | --------------------------------- | ----------------------------------------- |
+| `actualPdf`   | `string \| Buffer`                | File path or buffer of the PDF under test |
+| `expectedPdf` | `string \| Buffer`                | File path or buffer of the reference PDF  |
+| `options`     | `ComparePdfOptions` _(optional)_  | Comparison configuration                  |
+
+Returns `Promise<boolean>` — `true` if the PDFs are visually equivalent within the configured threshold, `false` otherwise.
+
+**Throws:**
+- `Error: PDF file not found: <path>` — when a string argument points to a non-existent file.
+- `Error: Unknown input file type.` — when an argument is neither a string nor a Buffer.
+- `Error: Compare Threshold cannot be less than 0.` — when `options.compareThreshold < 0`.
+
+### `ComparePdfOptions`
+
+| Property                 | Type                  | Default              | Description                                                                 |
+| ------------------------ | --------------------- | -------------------- | --------------------------------------------------------------------------- |
+| `diffsOutputFolder`      | `string`              | `./comparePdfOutput` | Folder where diff PNG images are written                                    |
+| `compareThreshold`       | `number`              | `0`                  | Maximum number of differing pixels allowed before comparison fails          |
+| `excludedAreas`          | `ExcludedPageArea[]`  | `[]`                 | Per-page exclusion zones; array index corresponds to page index (0-based)   |
+| `pdfToPngConvertOptions` | `PdfToPngOptions`     | see below            | Options forwarded to [`pdf-to-png-converter`](https://github.com/dichovsky/pdf-to-png-converter) |
+
+### `ExcludedPageArea`
+
+| Property            | Type     | Description                                                                                         |
+| ------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `pageNumber`        | `number` | Informational page number (matching is performed by array index, not this value)                    |
+| `excludedAreas`     | `Area[]` | Rectangles to exclude. `Area` = `{ x1, y1, x2, y2 }` in pixels at the configured `viewportScale`  |
+| `excludedAreaColor` | `Color`  | Fill color for excluded regions in diff images. `Color` = `{ r, g, b }` with values 0–255          |
+| `diffFilePath`      | `string` | Override the diff image output path for this page                                                   |
+| `matchingThreshold` | `number` | Per-page pixel threshold, overrides the document-level `compareThreshold` for this page             |
 
 ## Support
 

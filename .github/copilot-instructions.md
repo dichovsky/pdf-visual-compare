@@ -44,7 +44,7 @@ This is a TypeScript library with a single public API: `comparePdf(actualPdf, ex
 
 - Source files use `.js` extensions in imports (e.g., `'./comparePdf.js'`) even though the source is TypeScript — required by `moduleResolution: node16`.
 - `excludedAreas` is indexed by page position (0-based array index), not by `pageNumber` value. The `pageNumber` field on `ExcludedPageArea` is metadata only; matching is done by array index.
-- `compareThreshold` is an **absolute pixel count** (not a 0–1 ratio) when used in practice — the README example of `0.1` is misleading; see test 5 where threshold values are in the tens of thousands.
+- `compareThreshold` is an **absolute pixel count** (integer ≥ 0). `0` = pixel-perfect match required. The README example of `0.1` was historically misleading; see test 5 where real-world values are in the tens of thousands.
 - Test files are numbered with a prefix (`1.`, `2.`, …) to control execution order and group related scenarios.
 - Test data PDFs live in `./test-data/`; diff outputs go to `./test-results/` (cleaned before each test run).
 - Default diffs output folder is `./comparePdfOutput` (defined in `src/const.ts`).
