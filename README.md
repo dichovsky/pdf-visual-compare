@@ -30,7 +30,7 @@
   - [Comparison with options](#comparison-with-options)
   - [Comparing PDF buffers](#comparing-pdf-buffers)
 - [API](#api)
-  - [comparePdf](#comparepdFactualpdf-expectedpdf-options)
+  - [comparePdf](#comparepdfactualpdf-expectedpdf-options)
   - [ComparePdfOptions](#comparepdfoptions)
   - [ExcludedPageArea](#excludedpagearea)
 - [Support](#support)
