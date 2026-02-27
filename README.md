@@ -1,18 +1,55 @@
 # pdf-visual-compare
 
-Visual regression testing library for PDFs in JavaScript/TypeScript without binary and OS dependencies.
+<p align="center">
+  <strong>Visual regression testing library for PDFs in JavaScript/TypeScript without binary or OS dependencies</strong>
+</p>
 
-[![Tests on push](https://github.com/dichovsky/pdf-visual-compare/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/dichovsky/pdf-visual-compare/actions/workflows/test.yml)
+<p align="center">
+  <a href="https://www.npmjs.com/package/pdf-visual-compare">
+    <img src="https://img.shields.io/npm/v/pdf-visual-compare.svg?style=flat-square" alt="npm version">
+  </a>
+  <a href="https://www.npmjs.com/package/pdf-visual-compare">
+    <img src="https://img.shields.io/npm/dm/pdf-visual-compare.svg?style=flat-square" alt="npm downloads">
+  </a>
+  <a href="https://github.com/dichovsky/pdf-visual-compare/actions/workflows/test.yml">
+    <img src="https://github.com/dichovsky/pdf-visual-compare/actions/workflows/test.yml/badge.svg?branch=main" alt="Tests">
+  </a>
+  <a href="https://github.com/dichovsky/pdf-visual-compare/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/dichovsky/pdf-visual-compare?style=flat-square" alt="License">
+  </a>
+</p>
+
+---
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Basic comparison](#basic-comparison)
+  - [Comparison with options](#comparison-with-options)
+  - [Comparing PDF buffers](#comparing-pdf-buffers)
+- [API](#api)
+  - [comparePdf](#comparepdfactualpdf-expectedpdf-options)
+  - [ComparePdfOptions](#comparepdfoptions)
+  - [ExcludedPageArea](#excludedpagearea)
+- [Support](#support)
+
+---
 
 ## Requirements
 
 - Node.js >= 20
+
+---
 
 ## Installation
 
 ```sh
 npm install -D pdf-visual-compare
 ```
+
+---
 
 ## Usage
 
@@ -85,6 +122,8 @@ const expected = readFileSync('./expected.pdf');
 const isEqual = await comparePdf(actual, expected);
 ```
 
+---
+
 ## API
 
 ### `comparePdf(actualPdf, expectedPdf, options?)`
@@ -121,9 +160,10 @@ Returns `Promise<boolean>` — `true` if the PDFs are visually equivalent within
 | `diffFilePath`      | `string` | Override the diff image output path for this page                                                   |
 | `matchingThreshold` | `number` | Per-page pixel threshold, overrides the document-level `compareThreshold` for this page             |
 
+---
+
 ## Support
 
 If you want to support my work, you can buy me a coffee.
 
 [![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/dichovsky)
-
