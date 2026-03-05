@@ -3,13 +3,14 @@ import type { Area, Color } from 'png-visual-compare';
 /**
  * Defines a page-specific exclusion zone for PDF comparison.
  *
- * Elements in the `excludedAreas` array on {@link ComparePdfOptions} are matched to pages
- * by array index (0-based): index 0 targets the first page, index 1 the second, and so on.
+ * Each entry is matched to a PDF page by its `pageNumber` field (1-based):
+ * `pageNumber: 1` targets the first page, `pageNumber: 2` the second, and so on.
+ * Entries whose `pageNumber` does not correspond to any page are silently ignored.
  */
 export type ExcludedPageArea = {
     /**
-     * Informational page number for readability.
-     * Matching is performed by array index, not by this value.
+     * 1-based page number this exclusion applies to.
+     * Must match the page's position in the PDF (`1` = first page, `2` = second page, etc.).
      */
     pageNumber: number;
 
@@ -24,18 +25,23 @@ export type ExcludedPageArea = {
     /**
      * Fill color used to paint excluded regions in the diff output image.
      * Expressed as `{ r, g, b }` with channel values in the range 0–255.
+     *
+     * @remarks Currently reserved for future use. The underlying `png-visual-compare`
+     * library always paints excluded areas blue; this field has no effect at runtime.
      */
     excludedAreaColor?: Color;
 
     /**
      * Override the diff image output file path for this specific page.
-     * When omitted, the path is derived from the document-level `diffsOutputFolder`.
+     * When set, takes precedence over the path derived from `diffsOutputFolder`.
+     * When omitted, the path is auto-generated as `<diffsOutputFolder>/diff_<pageName>`.
      */
     diffFilePath?: string;
 
     /**
      * Per-page pixel difference threshold that overrides the document-level
-     * `compareThreshold` for this page only.
+     * `compareThreshold` for this page only. Must be >= 0.
+     * When omitted, the document-level `compareThreshold` applies.
      */
     matchingThreshold?: number;
 };

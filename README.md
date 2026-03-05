@@ -76,8 +76,8 @@ const isEqual = await comparePdf('./actual.pdf', './expected.pdf', {
   // 0 = pixel-perfect match required (default). Must be >= 0.
   compareThreshold: 200,
 
-  // Per-page exclusion zones, matched by array index (0-based).
-  // Index 0 → first page, index 1 → second page, etc.
+  // Per-page exclusion zones, matched by the `pageNumber` field (1-based).
+  // `pageNumber: 1` → first page, `pageNumber: 2` → second page, etc.
   // Pixel coordinates are relative to the rendered PNG at the configured viewportScale.
   excludedAreas: [
     {
@@ -128,11 +128,11 @@ const isEqual = await comparePdf(actual, expected);
 
 ### `comparePdf(actualPdf, expectedPdf, options?)`
 
-| Parameter     | Type                              | Description                               |
-| ------------- | --------------------------------- | ----------------------------------------- |
-| `actualPdf`   | `string \| Buffer`                | File path or buffer of the PDF under test |
-| `expectedPdf` | `string \| Buffer`                | File path or buffer of the reference PDF  |
-| `options`     | `ComparePdfOptions` _(optional)_  | Comparison configuration                  |
+| Parameter     | Type                                        | Description                               |
+| ------------- | ------------------------------------------- | ----------------------------------------- |
+| `actualPdf`   | `string \| Buffer \| ArrayBufferLike`       | File path or buffer of the PDF under test |
+| `expectedPdf` | `string \| Buffer \| ArrayBufferLike`       | File path or buffer of the reference PDF  |
+| `options`     | `ComparePdfOptions` _(optional)_            | Comparison configuration                  |
 
 Returns `Promise<boolean>` — `true` if the PDFs are visually equivalent within the configured threshold, `false` otherwise.
 
@@ -147,14 +147,14 @@ Returns `Promise<boolean>` — `true` if the PDFs are visually equivalent within
 | ------------------------ | --------------------- | -------------------- | --------------------------------------------------------------------------- |
 | `diffsOutputFolder`      | `string`              | `./comparePdfOutput` | Folder where diff PNG images are written                                    |
 | `compareThreshold`       | `number`              | `0`                  | Maximum number of differing pixels allowed before comparison fails          |
-| `excludedAreas`          | `ExcludedPageArea[]`  | `[]`                 | Per-page exclusion zones; array index corresponds to page index (0-based)   |
+| `excludedAreas`          | `ExcludedPageArea[]`  | `[]`                 | Per-page exclusion zones matched by the `pageNumber` field of each entry (1-based) |
 | `pdfToPngConvertOptions` | `PdfToPngOptions`     | see below            | Options forwarded to [`pdf-to-png-converter`](https://github.com/dichovsky/pdf-to-png-converter) |
 
 ### `ExcludedPageArea`
 
 | Property            | Type     | Description                                                                                         |
 | ------------------- | -------- | --------------------------------------------------------------------------------------------------- |
-| `pageNumber`        | `number` | Informational page number (matching is performed by array index, not this value)                    |
+| `pageNumber`        | `number` | 1-based page number this exclusion applies to (`1` = first page, `2` = second page, etc.)          |
 | `excludedAreas`     | `Area[]` | Rectangles to exclude. `Area` = `{ x1, y1, x2, y2 }` in pixels at the configured `viewportScale`  |
 | `excludedAreaColor` | `Color`  | Fill color for excluded regions in diff images. `Color` = `{ r, g, b }` with values 0–255          |
 | `diffFilePath`      | `string` | Override the diff image output path for this page                                                   |
