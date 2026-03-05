@@ -42,9 +42,12 @@ export async function comparePdf(
     }
 
     // Convert PDFs to PNGs
+    // Each call receives its own copy so that pdf-to-png-converter cannot mutate the shared
+    // options object (e.g. pagesToProcess) and cause "Invalid page request" errors when the
+    // two PDFs have different page counts and are processed in parallel.
     let [actualPdfPngPages, expectedPdfPngPages] = await Promise.all([
-        pdfToPng(actualPdf, pdfToPngConvertOpts),
-        pdfToPng(expectedPdf, pdfToPngConvertOpts),
+        pdfToPng(actualPdf, { ...pdfToPngConvertOpts }),
+        pdfToPng(expectedPdf, { ...pdfToPngConvertOpts }),
     ]);
 
     // Ensure actualPdfPngPages is always the longer array to avoid index out of bounds errors
