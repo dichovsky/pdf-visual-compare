@@ -1,7 +1,10 @@
 import { vi, expect, test } from 'vitest';
 
 vi.mock('pdf-to-png-converter', () => ({
-    pdfToPng: vi.fn().mockResolvedValue([{ name: 'comparePdf_1.png', content: undefined }]),
+    pdfToPng: vi
+        .fn()
+        .mockResolvedValueOnce([{ name: 'comparePdf_1.png', content: undefined }])
+        .mockResolvedValueOnce([{ name: 'comparePdf_1.png', content: Buffer.from('dummy') }]),
 }));
 
 test(`should throw when page content is undefined`, async () => {
