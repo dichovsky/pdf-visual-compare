@@ -579,29 +579,37 @@ index 0 applies to page 1 regardless of `pageNumber` value.
 
 ## Dependencies
 
-### [P1] Several devDependencies specify versions that do not yet exist on npm
+### [P1] Re‑audit devDependency versions for availability and compatibility
 
 **Problem**
-`package.json` specifies the following versions that did not exist at the time of this audit:
+Some devDependencies in `package.json` are pinned to forward‑looking version ranges. These should be
+periodically re‑audited to ensure that the referenced versions actually exist on npm and install
+cleanly on the Node.js versions this project supports.
 
-| Package | Specified | Latest stable |
-|---|---|---|
-| `vitest` | `^4.0.18` | `~2.x` |
-| `@vitest/coverage-v8` | `^4.0.18` | `~2.x` |
-| `eslint` | `^10.0.2` | `9.x` |
-| `typescript` | `^5.9.3` | `5.7.x` |
-| `rimraf` | `^6.1.3` | `5.x` |
-| `@types/node` | `^25.3.2` | matching Node 22 LTS |
+Re‑audit ranges such as:
 
-`npm ls` reports `UNMET DEPENDENCY` for all packages, meaning `npm install` / `npm ci` will fail in
-a fresh environment, breaking local setup and CI.
+| Package | Specified range |
+|---|---|
+| `vitest` | `^4.0.18` |
+| `@vitest/coverage-v8` | `^4.0.18` |
+| `eslint` | `^10.0.2` |
+| `typescript` | `^5.9.3` |
+| `rimraf` | `^6.1.3` |
+| `@types/node` | `^25.3.2` |
+
+If any referenced version has not yet been published, has been withdrawn, or is incompatible with
+the Node.js versions used in CI, `npm ls` / `npm ci` may report `UNMET DEPENDENCY` and installs can
+fail in a fresh environment.
 
 **Impact**
-`npm ci` fails; the repository is not installable; CI is broken.
+When devDependency versions do not exist on npm or are incompatible with the configured Node.js
+versions, `npm ci` can fail, preventing contributors and CI from installing and testing the project.
 
 **Solution**
-Pin each devDependency to the latest stable version that exists. Run `npm install` after updating
-`package.json` to regenerate `package-lock.json` with a valid dependency tree.
+On the Node.js versions supported by this project, run `npm ci` and verify that all devDependencies
+resolve without `UNMET DEPENDENCY` errors. If any specified versions are unavailable or cause
+installation failures, pin them to the latest published, compatible versions that exist on npm, then
+run `npm install` to regenerate `package-lock.json` with a valid dependency tree.
 
 **Files**
 `package.json`, `package-lock.json`
