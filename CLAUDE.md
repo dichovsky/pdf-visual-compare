@@ -34,7 +34,7 @@ This is a small TypeScript library published to npm. Source lives in `src/`, com
 **`ComparePngOptions` surface:** `png-visual-compare`'s `ComparePngOptions` only accepts `excludedAreas`, `diffFilePath`, `throwErrorOnInvalidInputData`, and `pixelmatchOptions`. The `ExcludedPageArea` fields `matchingThreshold` and `excludedAreaColor` are NOT forwarded to `comparePng` — `matchingThreshold` is applied manually as a per-page threshold override, and `excludedAreaColor` is reserved for future use.
 
 **Public API** (exported from `src/index.ts`):
-- `comparePdf(actualPdf: string | ArrayBufferLike, expectedPdf: string | ArrayBufferLike, opts?: ComparePdfOptions): Promise<boolean>`
+- `comparePdf(actualPdf: string | Buffer | ArrayBufferLike, expectedPdf: string | Buffer | ArrayBufferLike, opts?: ComparePdfOptions): Promise<boolean>`
 - `ComparePdfOptions` type
 - `ExcludedPageArea` type
 
