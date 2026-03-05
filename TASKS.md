@@ -99,28 +99,26 @@ Docker task below).
 ### [P1] Fix "Invalid page request" crash when PDFs have different page counts (CI failure)
 
 **Problem**
-`comparePdf.ts` passes the **same** `pdfToPngConvertOpts` object reference to both parallel
-`pdfToPng()` calls. `pdf-to-png-converter` mutates this object internally (e.g., it writes back
-`pagesToProcess` based on the actual PDF page count). When the two PDFs have different page counts,
-one call overwrites `pagesToProcess` with values valid for its PDF; the other call then tries to
-fetch non-existent pages and throws `Error: Invalid page request`.
+`comparePdf.ts` originally used `Promise.all` to convert both PDFs to PNGs concurrently.
+PDF.js uses a shared worker internally, and `pdfDocument.cleanup()` at the end of one `pdfToPng`
+call can corrupt the worker's state for the concurrent call. When the two PDFs have different page
+counts, the shorter-PDF call finishes and cleans up first, causing the other call to receive an
+`Error: Invalid page request` from PDF.js.
 
-This is an active CI failure visible in run `22488913018` (test: *should return false for non equal
-PDF files, pages amount not match*).
+This is an active CI failure visible in runs `22488913018` and `22720347832` (test: *should return
+false for non equal PDF files, pages amount not match*).
 
 **Impact**
 Test suite fails on CI; any real-world comparison of PDFs with different page counts throws an
 unhandled error instead of returning `false`.
 
 **Solution** *(already applied in this PR)*
-Pass a separate shallow copy of the options to each call so that mutations in one invocation cannot
-affect the other:
+Run the two `pdfToPng` calls sequentially so each PDF document is fully loaded, processed, and
+cleaned up before the next one starts:
 
 ```typescript
-let [actualPdfPngPages, expectedPdfPngPages] = await Promise.all([
-    pdfToPng(actualPdf, { ...pdfToPngConvertOpts }),
-    pdfToPng(expectedPdf, { ...pdfToPngConvertOpts }),
-]);
+let actualPdfPngPages = await pdfToPng(actualPdf, { ...pdfToPngConvertOpts });
+let expectedPdfPngPages = await pdfToPng(expectedPdf, { ...pdfToPngConvertOpts });
 ```
 
 **Files**
