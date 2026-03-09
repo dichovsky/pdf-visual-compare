@@ -33,9 +33,9 @@ export async function comparePdf(
         pdfToPngConvertOpts.outputFileMaskFunc = (pageNumber: number) => `comparePdf_${pageNumber}.png`;
     }
 
-    const diffsOutputFolder: string = opts?.diffsOutputFolder ?? DEFAULT_DIFFS_FOLDER;
-    const compareThreshold: number = opts?.compareThreshold ?? 0;
-    const excludedAreas: readonly ExcludedPageArea[] = opts?.excludedAreas ?? [];
+    const diffsOutputFolder: string = opts.diffsOutputFolder ?? DEFAULT_DIFFS_FOLDER;
+    const compareThreshold: number = opts.compareThreshold ?? 0;
+    const excludedAreas: readonly ExcludedPageArea[] = opts.excludedAreas ?? [];
 
     if (compareThreshold < 0) {
         throw Error('Compare Threshold cannot be less than 0.');
@@ -45,56 +45,64 @@ export async function comparePdf(
     // When two pdfToPng calls run concurrently via Promise.all, the pdfDocument.cleanup()
     // in one call can corrupt the shared PDF.js worker state for the other call, causing
     // "Invalid page request" errors — particularly when the two PDFs have different page counts.
-    // Both variables are declared with let because they may be swapped below
-    // when the expected PDF has more pages than the actual PDF.
-    let actualPdfPngPages = await pdfToPng(actualPdf, { ...pdfToPngConvertOpts });
-    let expectedPdfPngPages = await pdfToPng(expectedPdf, { ...pdfToPngConvertOpts });
-
-    // Ensure actualPdfPngPages is always the longer array to avoid index out of bounds errors
-    if (actualPdfPngPages.length < expectedPdfPngPages.length) {
-        [actualPdfPngPages, expectedPdfPngPages] = [expectedPdfPngPages, actualPdfPngPages];
-    }
+    const actualPdfPngPages = await pdfToPng(actualPdf, { ...pdfToPngConvertOpts });
+    const expectedPdfPngPages = await pdfToPng(expectedPdf, { ...pdfToPngConvertOpts });
 
     let documentCompareResult = true;
-    actualPdfPngPages.forEach((pngPage, index) => {
+
+    for (const [index, pngPage] of actualPdfPngPages.entries()) {
+        // Look up the exclusion zone for this page by 1-based page number.
+        const pageExcludedArea = excludedAreas.find((area) => area.pageNumber === index + 1);
+
+        if (!pngPage.content) {
+            throw new Error(`Page content is undefined for page: ${pngPage.name}`);
+        }
+
+        // Only forward the fields that ComparePngOptions actually recognises.
+        // The per-page diffFilePath override takes precedence over the auto-generated path.
         const comparePngOpts: ComparePngOptions = {
-            ...opts?.pdfToPngConvertOptions,
-            ...excludedAreas[index],
+            excludedAreas: pageExcludedArea?.excludedAreas,
+            diffFilePath: pageExcludedArea?.diffFilePath ?? resolve(diffsOutputFolder, `diff_${pngPage.name}`),
             throwErrorOnInvalidInputData: false,
         };
-        comparePngOpts.diffFilePath = resolve(diffsOutputFolder, `diff_${pngPage.name}`);
 
         const pngPageOutputToCompareWith: PngPageOutput | undefined = expectedPdfPngPages.find(
             (p) => p.name === pngPage.name,
         );
 
         const pageCompareResult: number = comparePng(
-            pngPage.content!,
+            pngPage.content,
             pngPageOutputToCompareWith?.content ?? '',
             comparePngOpts,
         );
 
-        if (pageCompareResult > compareThreshold) {
+        // Per-page matchingThreshold overrides the document-level compareThreshold when set.
+        const pageThreshold = pageExcludedArea?.matchingThreshold ?? compareThreshold;
+        if (pageCompareResult > pageThreshold) {
             documentCompareResult = false;
         }
-    });
+    }
+
+    // Extra pages present in expected but absent from actual are always a mismatch.
+    if (expectedPdfPngPages.length > actualPdfPngPages.length) {
+        documentCompareResult = false;
+    }
 
     return documentCompareResult;
 }
 
 /**
- * Validates the type of the input file. The input file can either be a Buffer or a string representing a file path.
- * If the input file is a Buffer, the function returns without any error.
- * If the input file is a string, the function checks if the file exists at the given path.
- * If the file does not exist, an error is thrown.
- * If the input file is neither a Buffer nor a string, an error is thrown.
+ * Validates the type of the input file.
  *
- * @param inputFile - The input file to validate. It can be a Buffer or a string representing a file path.
- * @throws {Error} If the input file is a string and the file does not exist.
- * @throws {Error} If the input file is neither a Buffer nor a string.
+ * Accepts a `Buffer`, any `ArrayBufferLike` (`ArrayBuffer` / `SharedArrayBuffer`), or a
+ * string path that points to an existing file. Throws for any other input.
+ *
+ * @param inputFile - The input to validate.
+ * @throws {Error} If the input is a string path that does not exist.
+ * @throws {Error} If the input is neither a recognised buffer type nor a string.
  */
-function validateInputFileType(inputFile: any): void {
-    if (Buffer.isBuffer(inputFile)) {
+function validateInputFileType(inputFile: unknown): void {
+    if (Buffer.isBuffer(inputFile) || inputFile instanceof ArrayBuffer || inputFile instanceof SharedArrayBuffer) {
         return;
     }
     if (typeof inputFile === 'string') {

@@ -9,7 +9,9 @@
     "pdf compare",
     "compare pdf",
     "pdf diff",
-    "visual regression"
+    "visual regression",
+    "pdf testing",
+    "visual-diff"
   ],
   "homepage": "https://github.com/dichovsky/pdf-visual-compare#readme",
   "bugs": {
@@ -63,13 +65,11 @@
     "eslint": "^10.0.2",
     "jiti": "^2.6.1",
     "rimraf": "^6.1.3",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"
   },
   "engines": {
-    "node": ">=20",
-    "yarn": "please-use-npm"
+    "node": ">=20"
   }
 }
