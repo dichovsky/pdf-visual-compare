@@ -50,7 +50,7 @@ export async function comparePdf(
 
     let documentCompareResult = true;
 
-    actualPdfPngPages.forEach((pngPage, index) => {
+    for (const [index, pngPage] of actualPdfPngPages.entries()) {
         // Look up the exclusion zone for this page by 1-based page number.
         const pageExcludedArea = excludedAreas.find((area) => area.pageNumber === index + 1);
 
@@ -81,7 +81,7 @@ export async function comparePdf(
         if (pageCompareResult > pageThreshold) {
             documentCompareResult = false;
         }
-    });
+    }
 
     // Extra pages present in expected but absent from actual are always a mismatch.
     if (expectedPdfPngPages.length > actualPdfPngPages.length) {
