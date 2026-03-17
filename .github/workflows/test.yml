@@ -1,15 +1,15 @@
 name: Tests on push
 on:
   push:
-    branches-ignore:    
-      - 'release/*' 
+    branches-ignore:
+      - 'release/*'
 jobs:
   ubuntu:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Test on Ubuntu Use Node.js 24.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 24.x
           cache: 'npm'
@@ -20,9 +20,9 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Test on Windows Use Node.js 24.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 24.x
           cache: 'npm'

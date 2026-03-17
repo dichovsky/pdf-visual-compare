@@ -6,7 +6,7 @@ test(`should return true for non equal PDF files with excluded areas`, async () 
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
         excludedAreas: [
             {
-                pageNumber: 0,
+                pageNumber: 1,
                 excludedAreas: [
                     {
                         x1: 700,
@@ -23,7 +23,7 @@ test(`should return true for non equal PDF files with excluded areas`, async () 
                 ],
             },
             {
-                pageNumber: 1,
+                pageNumber: 2,
                 excludedAreas: [
                     {
                         x1: 680,
