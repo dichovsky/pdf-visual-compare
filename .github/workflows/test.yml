@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Test on Ubuntu Use Node.js 24.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.x
           cache: 'npm'
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Test on Windows Use Node.js 24.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.x
           cache: 'npm'
