@@ -59,15 +59,15 @@
     "png-visual-compare": "~4.1.0"
   },
   "devDependencies": {
-    "@types/node": "^25.3.2",
+    "@types/node": "^25.5.0",
     "@types/pngjs": "^6.0.5",
-    "@vitest/coverage-v8": "^4.0.18",
-    "eslint": "^10.0.2",
+    "@vitest/coverage-v8": "^4.1.1",
+    "eslint": "^10.1.0",
     "jiti": "^2.6.1",
     "rimraf": "^6.1.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1",
-    "vitest": "^4.0.18"
+    "typescript-eslint": "^8.57.2",
+    "vitest": "^4.1.1"
   },
   "engines": {
     "node": ">=20"
