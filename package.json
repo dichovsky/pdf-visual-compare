@@ -40,7 +40,7 @@
     "./out"
   ],
   "scripts": {
-    "prepublishOnly": "npm test",
+    "prepublishOnly": "npm test && npm run build",
     "prebuild": "npm run clean",
     "build": "tsc --pretty",
     "clean": "rimraf ./out ./coverage ./test-results ./comparePdfOutput",
