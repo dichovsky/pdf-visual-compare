@@ -1,7 +1,7 @@
 {
   "name": "pdf-visual-compare",
-  "version": "3.5.0",
-  "description": "Visual regression testing library for PDFs in Js/Ts without binary and OS dependencies.",
+  "version": "4.0.0",
+  "description": "Visual regression testing library for PDFs in Js/Ts without external system package dependencies.",
   "keywords": [
     "pdf",
     "pdf regression",
@@ -56,7 +56,7 @@
     "test:license": "npx --yes license-checker --production --onlyAllow \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\""
   },
   "dependencies": {
-    "pdf-to-png-converter": "3.18.0",
+    "pdf-to-png-converter": "~3.18.0",
     "png-visual-compare": "~5.1.0"
   },
   "devDependencies": {
@@ -72,5 +72,9 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ]
 }

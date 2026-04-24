@@ -1,7 +1,7 @@
 # pdf-visual-compare
 
 <p align="center">
-  <strong>Visual regression testing library for PDFs in JavaScript/TypeScript without binary or OS dependencies</strong>
+  <strong>Visual regression testing library for PDFs in JavaScript/TypeScript without external system package dependencies</strong>
 </p>
 
 <p align="center">
@@ -40,6 +40,8 @@
 ## Requirements
 
 - Node.js >= 20
+- Supported and CI-validated runtimes: Linux and macOS
+- Windows is not supported
 
 ---
 
