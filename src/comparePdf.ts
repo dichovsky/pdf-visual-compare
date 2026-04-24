@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { pdfToPng, type PngPageOutput, type PdfToPngOptions } from 'pdf-to-png-converter';
 import { comparePng, type ComparePngOptions } from 'png-visual-compare';
 import { DEFAULT_DIFFS_FOLDER } from './const.js';
+import { ensurePdfToPngWindowsCompat } from './pdfToPngWindowsCompat.js';
 import type { ComparePdfOptions } from './types/ComparePdfOptions.js';
 import type { ExcludedPageArea } from './types/ExcludedPageArea.js';
 
@@ -40,6 +41,10 @@ export async function comparePdf(
     if (compareThreshold < 0) {
         throw Error('Compare Threshold cannot be less than 0.');
     }
+
+    // pdfjs-dist 5.x accepts only forward-slash factory URLs; patch the dependency's
+    // Windows path normalizer once so cMap/font asset paths stay valid on windows-2022 CI.
+    ensurePdfToPngWindowsCompat();
 
     // Convert PDFs to PNGs sequentially to avoid PDF.js worker state corruption.
     // When two pdfToPng calls run concurrently via Promise.all, the pdfDocument.cleanup()
