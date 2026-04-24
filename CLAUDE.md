@@ -45,3 +45,17 @@ This is a small TypeScript library published to npm. Source lives in `src/`, com
 ## Test Structure
 
 Tests are in `__tests__/` and use Vitest. Test PDFs are in `test-data/`. Tests import directly from `../src` (not the compiled output), so no build step is needed for running tests in isolation. Test 8 (`8.compare.undefined.page.content.test.ts`) uses `vi.mock` to simulate a `pdfToPng` returning `content: undefined`, covering the content-guard branch.
+
+## Mistake Logging
+
+Log one compact event per mistake (20-40 tokens, no filler):
+
+```text
+Ctx:
+Err:
+Cause:
+Fix:
+Rule:
+```
+
+Store project-specific mistakes in `.claude/memory`; generalizable rules in global memory.
