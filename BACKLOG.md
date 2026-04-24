@@ -1,6 +1,7 @@
 # BACKLOG
 
-Consolidated backlog merged from the current code review, `BACKLOG_GEMINI.md`, and `TASKS.md`.
+Consolidated backlog merged from the current code review and earlier backlog/task notes that are
+no longer tracked in this repository.
 
 Only active, non-duplicate items are retained here. Obsolete items that are already fixed in the
 current codebase were intentionally dropped.
