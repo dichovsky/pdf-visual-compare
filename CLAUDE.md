@@ -58,4 +58,4 @@ Fix:
 Rule:
 ```
 
-Store project-specific mistakes in `.claude/memory`; generalizable rules in global memory.
+Store project-specific mistakes in this `CLAUDE.md` file under this section; keep generalizable rules in global memory. Do not rely on an uncommitted `.claude/memory` path.
