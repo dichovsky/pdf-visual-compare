@@ -1,7 +1,10 @@
 node_modules
-test-results
-coverage
 out
-.vscode
+coverage
+test-results
+comparePdfOutput
+.git
 .github
-.devcontainer
+.DS_Store
+npm-debug.log
+Dockerfile

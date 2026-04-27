@@ -20,7 +20,7 @@ npx vitest run __tests__/1.compare.equal.pdf.files.test.ts
 Run Docker steps individually:
 ```sh
 npm run docker:build   # docker build → image: test-pdf-visual-compare
-npm run docker:run     # docker run (mounts ./test-results into container)
+npm run docker:run     # docker run (prepares ./test-results, then mounts it into the container)
 ```
 
 > `npm run test` always runs `pretest` first (clean → lint → license → build). If you want to skip
@@ -63,7 +63,7 @@ pdf-visual-compare/
 ├── eslint.config.mjs
 ├── vitest.config.mjs
 ├── .prettierrc
-├── Dockerfile                    # Node 20, runs docker:test
+├── Dockerfile                    # Node 20 slim, test-only Vitest runner
 └── package.json
 ```
 
@@ -81,6 +81,7 @@ actualPdf / expectedPdf
         ▼
 1. validateInputFileType()
    ├── Buffer → accepted
+   ├── ArrayBuffer → accepted
    ├── string + file exists → accepted
    ├── string + file missing → throw "PDF file not found: <path>"
    └── other → throw "Unknown input file type."
@@ -119,7 +120,7 @@ actualPdf / expectedPdf
 
 | Package | Role |
 |---------|------|
-| `pdf-to-png-converter` | Converts PDF pages to PNG `Buffer`s. Pure JS, no system binaries (uses pdfjs-dist internally). Supports file paths and `ArrayBufferLike` inputs, passwords, partial page processing, parallel rendering. |
+| `pdf-to-png-converter` | Converts PDF pages to PNG `Buffer`s. Pure JS, no system binaries (uses pdfjs-dist internally). Supports file paths and `ArrayBuffer` inputs, passwords, partial page processing, parallel rendering. |
 | `png-visual-compare` | Pixel-level PNG diff. Accepts `Buffer` or file path. Returns absolute pixel difference count. Writes diff images to disk. Supports exclusion rectangles and per-comparison thresholds. |
 
 ---
@@ -131,8 +132,8 @@ actualPdf / expectedPdf
 **Signature:**
 ```typescript
 function comparePdf(
-    actualPdf: string | ArrayBufferLike,
-    expectedPdf: string | ArrayBufferLike,
+    actualPdf: string | Buffer | ArrayBuffer,
+    expectedPdf: string | Buffer | ArrayBuffer,
     opts?: ComparePdfOptions,
 ): Promise<boolean>
 ```
@@ -141,7 +142,7 @@ function comparePdf(
 
 **Throws:**
 - `Error: PDF file not found: <path>` — string path that does not exist on disk
-- `Error: Unknown input file type.` — input is neither `Buffer` nor `string`
+- `Error: Unknown input file type.` — input is not `string`, `Buffer`, or `ArrayBuffer`
 - `Error: Compare Threshold cannot be less than 0.` — `opts.compareThreshold < 0`
 
 ---
