@@ -1,13 +1,24 @@
 import { expect, test } from 'vitest';
 import { buildPageComparisonPlan } from '../src/internal/pageComparisonPlan.js';
+import type { RenderedPngPageOutput } from '../src/internal/types.js';
+
+function createRenderedPage(pageNumber: number, name: string, content: string): RenderedPngPageOutput {
+    return {
+        kind: 'content',
+        pageNumber,
+        name,
+        content: Buffer.from(content),
+        path: '',
+        width: 1,
+        height: 1,
+        rotation: 0,
+    };
+}
 
 test(`should plan page comparisons by page number with first exclusion winning`, () => {
     const plan = buildPageComparisonPlan(
-        [
-            { name: 'actual-4.png', pageNumber: 4, content: Buffer.from('actual-4') },
-            { name: 'actual-2.png', pageNumber: 2, content: Buffer.from('actual-2') },
-        ],
-        [{ name: 'expected-3.png', pageNumber: 3, content: Buffer.from('expected-3') }],
+        [createRenderedPage(4, 'actual-4.png', 'actual-4'), createRenderedPage(2, 'actual-2.png', 'actual-2')],
+        [createRenderedPage(3, 'expected-3.png', 'expected-3')],
         [
             { pageNumber: 3, matchingThreshold: 5 },
             { pageNumber: 3, matchingThreshold: 10 },

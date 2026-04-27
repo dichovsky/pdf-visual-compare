@@ -4,7 +4,12 @@ import { expect, test } from 'vitest';
 import { comparePdf, ComparePdfConfigurationError, ComparePdfInputError } from '../src';
 import type { PdfInput } from '../src';
 
-async function expectTypedError(comparePromise: Promise<unknown>, errorClass: ErrorConstructor, message: string): Promise<void> {
+type ErrorClass = {
+    new (message: string, options?: ErrorOptions): Error;
+    name: string;
+};
+
+async function expectTypedError(comparePromise: Promise<unknown>, errorClass: ErrorClass, message: string): Promise<void> {
     await expect(comparePromise).rejects.toThrow(errorClass);
     await expect(comparePromise).rejects.toThrow(message);
     await expect(comparePromise).rejects.toMatchObject({

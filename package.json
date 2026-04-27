@@ -41,7 +41,7 @@
   ],
   "scripts": {
     "prebuild": "npm run clean",
-    "build": "tsc --pretty",
+    "build": "tsc --pretty -p ./tsconfig.prod.json",
     "clean": "rimraf ./out ./coverage ./test-results ./comparePdfOutput",
     "docker:build": "docker build --compress -t test-pdf-visual-compare .",
     "predocker:run": "npm run clean && mkdir -p ./test-results && chmod 777 ./test-results",
@@ -57,14 +57,15 @@
     "test:artifacts": "node ./__tests__/published-artifacts/verify-built-package.mjs",
     "test:docker": "npm run docker:build && npm run docker:run",
     "test:license": "npx --yes license-checker --production --onlyAllow \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\"",
-    "test:types": "tsc --pretty --noEmit -p ./tsconfig.consumer.json"
+    "test:types": "tsc --pretty -p ./tsconfig.json"
   },
   "dependencies": {
-    "pdf-to-png-converter": "^4.0.0",
+    "pdf-to-png-converter": "~4.0.0",
     "png-visual-compare": "~6.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
+    "@types/pngjs": "^6.0.5",
     "@vitest/coverage-v8": "^4.1.5",
     "eslint": "^10.2.1",
     "jiti": "^2.6.1",

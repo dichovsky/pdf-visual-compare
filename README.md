@@ -71,13 +71,13 @@ Node 24 or newer.
 ## Validation
 
 ```sh
-npm run test:types      # Compile a consumer-style TypeScript fixture against the built package types
+npm run test:types      # Type-check all repository TypeScript, including the published-surface fixture
 npm run test:artifacts  # Verify the built package entry points and npm pack contents
 npm test                # Full pipeline: clean → lint → license check → build → type/artifact checks → vitest --coverage
 ```
 
-`npm run test:types` and `npm run test:artifacts` validate the built/published package surface, so
-they expect `./out/` to be up to date. `npm test` handles that automatically.
+`npm run test:types` includes the published-surface fixture under `__tests__/published-artifacts/`,
+so it still expects `./out/` to be up to date. `npm test` handles that automatically.
 
 ## Repository merge policy
 

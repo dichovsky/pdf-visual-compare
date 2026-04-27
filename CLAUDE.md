@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run build          # Compile TypeScript to ./out (runs clean first)
 npm run lint           # Run ESLint
 npm run lint:fix       # Run ESLint with auto-fix
-npm run test:types     # Compile consumer-style TypeScript usage against the built package declarations
+npm run test:types     # Type-check all repo TypeScript, including the built-package fixture
 npm run test:artifacts # Verify built entry points/export map behavior and npm pack contents
 npm test               # Full test suite: clean + lint + license check + build + type/artifact checks + vitest with coverage
 npx vitest run         # Run tests without the pre-steps (faster for iteration)
@@ -51,7 +51,7 @@ This is a small TypeScript library published to npm. Source lives in `src/`, com
 
 ## Test Structure
 
-Tests are in `__tests__/` and use Vitest. Test PDFs are in `test-data/`. Most Vitest suites import directly from `../src`, but `__tests__/published-artifacts/` verifies the built package surface via self-references to `pdf-visual-compare`, so those checks require `./out/` to be current. Run `npm test` for the full validation path; use `npm run build` first if you want to execute the published-surface checks directly.
+Tests are in `__tests__/` and use Vitest. Test PDFs are in `test-data/`. `tsconfig.json` is the workspace/dev config and includes all repo `.ts` files, including `__tests__/published-artifacts/consumer-types.ts`, which verifies the built package surface via a self-reference to `pdf-visual-compare`. That means `npm run test:types` still requires `./out/` to be current. Run `npm test` for the full validation path; use `npm run build` first if you want to execute the published-surface checks directly.
 
 ## Mistake Logging
 

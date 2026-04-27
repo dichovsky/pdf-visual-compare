@@ -39,7 +39,7 @@ npm run build          # Clean + compile TypeScript to ./out
 npm run lint           # ESLint
 npm run lint:fix       # ESLint with auto-fix
 npm run test:license   # Validate allowed production dependency licenses
-npm run test:types     # Verify consumer-facing TypeScript types against built output
+npm run test:types     # Type-check all repo TypeScript, including the published-surface fixture
 npm run test:artifacts # Verify exports and npm pack contents from ./out
 npm test               # Full validation pipeline + Vitest coverage
 npm run test:docker    # Build Docker image and run tests in the container

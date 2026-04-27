@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import { comparePdf } from '../src';
 
 function toArrayBuffer(buffer: Buffer): ArrayBuffer {
-    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    return Uint8Array.from(buffer).buffer;
 }
 
 test(`should return true for equal PDF ArrayBuffers`, async () => {

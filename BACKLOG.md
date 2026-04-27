@@ -389,6 +389,8 @@ purpose.
 ### TEST-001 — Add type-level and published-artifact verification to the test strategy
 **Area:** Testing Strategy, Release Safety
 
+**Status:** Implemented via `npm run test:types` and `npm run test:artifacts`.
+
 **Problem**  
 The current suite validates runtime behavior well, but it does not type-check consumer-style usage
 against the published declarations and it does not verify the built package entry point.
