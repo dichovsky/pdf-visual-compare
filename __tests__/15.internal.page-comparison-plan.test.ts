@@ -1,0 +1,31 @@
+import { expect, test } from 'vitest';
+import { buildPageComparisonPlan } from '../src/internal/pageComparisonPlan.js';
+import type { RenderedPngPageOutput } from '../src/internal/types.js';
+
+function createRenderedPage(pageNumber: number, name: string, content: string): RenderedPngPageOutput {
+    return {
+        kind: 'content',
+        pageNumber,
+        name,
+        content: Buffer.from(content),
+        path: '',
+        width: 1,
+        height: 1,
+        rotation: 0,
+    };
+}
+
+test(`should plan page comparisons by page number with first exclusion winning`, () => {
+    const plan = buildPageComparisonPlan(
+        [createRenderedPage(4, 'actual-4.png', 'actual-4'), createRenderedPage(2, 'actual-2.png', 'actual-2')],
+        [createRenderedPage(3, 'expected-3.png', 'expected-3')],
+        [
+            { pageNumber: 3, matchingThreshold: 5 },
+            { pageNumber: 3, matchingThreshold: 10 },
+        ],
+    );
+
+    expect(plan.map((entry) => entry.pageNumber)).toEqual([2, 3, 4]);
+    expect(plan[1]?.pageExclusion?.matchingThreshold).toBe(5);
+    expect(plan[1]?.expectedPage?.name).toBe('expected-3.png');
+});

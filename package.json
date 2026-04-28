@@ -27,8 +27,6 @@
   },
   "license": "MIT",
   "author": "Igor Magdich <magdich.igor@gmail.com>",
-  "main": "./out/index.js",
-  "types": "./out/index.d.ts",
   "exports": {
     ".": {
       "require": "./out/index.js",
@@ -36,28 +34,34 @@
       "default": "./out/index.js"
     }
   },
+  "main": "./out/index.js",
+  "types": "./out/index.d.ts",
   "files": [
     "./out"
   ],
   "scripts": {
-    "prepublishOnly": "npm test && npm run build",
     "prebuild": "npm run clean",
-    "build": "tsc --pretty",
+    "build": "tsc --pretty -p ./tsconfig.prod.json",
     "clean": "rimraf ./out ./coverage ./test-results ./comparePdfOutput",
     "docker:build": "docker build --compress -t test-pdf-visual-compare .",
-    "predocker:run": "npm run clean",
-    "docker:run": "docker run --rm -it -v $PWD/test-results:/usr/pkg/test-results test-pdf-visual-compare",
+    "predocker:run": "npm run clean && mkdir -p ./test-results && chmod 777 ./test-results",
+    "docker:run": "docker run --rm -it -v \"$PWD/test-results:/usr/pkg/test-results\" test-pdf-visual-compare",
     "docker:test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
-    "pretest": "npm run clean && npm run lint && npm run test:license && npm run build",
+    "prepublishOnly": "npm test",
+    "pretest": "npm run clean && npm run lint && npm run test:license && npm run build && npm run test:types && npm run test:artifacts",
     "test": "vitest run --coverage",
+    "test:artifacts": "node ./__tests__/published-artifacts/verify-built-package.mjs",
     "test:docker": "npm run docker:build && npm run docker:run",
-    "test:license": "npx --yes license-checker --production --onlyAllow \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\""
+    "test:license": "npx --yes license-checker --production --onlyAllow \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\"",
+    "test:types": "tsc --pretty -p ./tsconfig.json"
   },
   "dependencies": {
     "pdf-to-png-converter": "~4.0.0",
-    "png-visual-compare": "~5.1.0"
+    "png-visual-compare": "~6.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
@@ -71,7 +75,7 @@
     "vitest": "^4.1.5"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "os": [
     "darwin",

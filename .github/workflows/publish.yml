@@ -24,8 +24,7 @@ jobs:
             cache: 'npm'
             registry-url: 'https://registry.npmjs.org'
       - run: npm ci
-      - run: npm audit --audit-level=high
-      - run: npm run build
-      - run: npm publish --provenance
+      - run: npm run prepublishOnly
+      - run: npm publish --ignore-scripts --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

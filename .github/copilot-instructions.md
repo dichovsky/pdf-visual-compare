@@ -20,7 +20,7 @@ npx vitest run __tests__/1.compare.equal.pdf.files.test.ts
 Run Docker steps individually:
 ```sh
 npm run docker:build   # docker build → image: test-pdf-visual-compare
-npm run docker:run     # docker run (mounts ./test-results into container)
+npm run docker:run     # docker run (prepares ./test-results, then mounts it into the container)
 ```
 
 > `npm run test` always runs `pretest` first (clean → lint → license → build). If you want to skip
@@ -63,7 +63,7 @@ pdf-visual-compare/
 ├── eslint.config.mjs
 ├── vitest.config.mjs
 ├── .prettierrc
-├── Dockerfile                    # Node 20, runs docker:test
+├── Dockerfile                    # Node 24 slim, test-only Vitest runner
 └── package.json
 ```
 
@@ -71,7 +71,9 @@ pdf-visual-compare/
 
 ## Architecture
 
-This library exposes a single async function: `comparePdf(actualPdf, expectedPdf, opts?)`.
+This library exposes a boolean convenience API plus a detailed result API:
+- `comparePdf(actualPdf, expectedPdf, opts?)`
+- `comparePdfDetailed(actualPdf, expectedPdf, opts?)`
 
 ### Pipeline (`src/comparePdf.ts`)
 
@@ -79,47 +81,44 @@ This library exposes a single async function: `comparePdf(actualPdf, expectedPdf
 actualPdf / expectedPdf
         │
         ▼
-1. validateInputFileType()
-   ├── Buffer → accepted
-   ├── string + file exists → accepted
-   ├── string + file missing → throw "PDF file not found: <path>"
-   └── other → throw "Unknown input file type."
+1. normalizePdfInput()
+   ├── Buffer / ArrayBuffer / SharedArrayBuffer → accepted
+   ├── string path → optionally constrained by `allowedInputRoot`, then read into bytes
+   ├── missing / unreadable path → throw typed `ComparePdfInputError`
+   ├── path outside `allowedInputRoot` → throw typed `ComparePdfConfigurationError`
+   └── other → throw typed `ComparePdfInputError`
         │
         ▼
-2. Merge pdfToPngConvertOptions defaults
+2. Normalize comparison options
+   ├── `writeDiffs` defaults to `false`
+   ├── `compareThreshold` defaults to `0`
    ├── viewportScale defaults to 2.0 (if not provided)
    └── outputFileMaskFunc defaults to (n) => `comparePdf_${n}.png`
         │
         ▼
-3. Validate compareThreshold >= 0 (throws if negative)
+3. Discover rendered page numbers via metadata-only `pdfToPng` calls
+   - Renderer calls remain sequential
+   - Uses pdf-to-png-converter 4.x with prebuilt `@napi-rs/canvas` binaries
         │
         ▼
-4. Promise.all([pdfToPng(actual), pdfToPng(expected)])
-   - Both PDFs converted to PNG arrays in parallel
-   - Uses pdf-to-png-converter (pure JavaScript, no native binaries)
+4. Build a page-number keyed comparison plan
         │
         ▼
-5. Ensure actualPdfPngPages.length >= expectedPdfPngPages.length
-   - If not, swap arrays (prevents index-out-of-bounds on the forEach)
+5. Render and compare planned pages one page at a time
+   ├── Render actual/expected pages for the current `pageNumber`
+   ├── Build ComparePngOptions from `PageExclusion`
+   ├── Write diff paths only when `writeDiffs: true`
+   └── Record a page-level comparison result
         │
         ▼
-6. forEach over actualPdfPngPages pages:
-   ├── Build ComparePngOptions from excludedAreas[index] (0-based index, not pageNumber)
-   ├── diffFilePath = resolve(diffsOutputFolder, `diff_${pngPage.name}`)
-   ├── Find matching expected page by name (pngPage.name)
-   │   └── If no matching page → passes empty string as expected content (will produce diff)
-   ├── comparePng(actual.content, expected.content, opts)
-   └── If result > compareThreshold → documentCompareResult = false
-        │
-        ▼
-7. Returns boolean (true = within threshold, false = differences exceed threshold)
+6. `comparePdf()` returns `result.isEqual`; `comparePdfDetailed()` returns the full structured result
 ```
 
 ### Dependencies
 
 | Package | Role |
 |---------|------|
-| `pdf-to-png-converter` | Converts PDF pages to PNG `Buffer`s. Pure JS, no system binaries (uses pdfjs-dist internally). Supports file paths and `ArrayBufferLike` inputs, passwords, partial page processing, parallel rendering. |
+| `pdf-to-png-converter` | Converts PDF pages to PNG `Buffer`s. Uses PDF.js plus prebuilt `@napi-rs/canvas` binaries. Supports file paths and `ArrayBufferLike` inputs, passwords, partial page processing, and metadata-only discovery. |
 | `png-visual-compare` | Pixel-level PNG diff. Accepts `Buffer` or file path. Returns absolute pixel difference count. Writes diff images to disk. Supports exclusion rectangles and per-comparison thresholds. |
 
 ---
@@ -131,8 +130,8 @@ actualPdf / expectedPdf
 **Signature:**
 ```typescript
 function comparePdf(
-    actualPdf: string | ArrayBufferLike,
-    expectedPdf: string | ArrayBufferLike,
+    actualPdf: PdfInput,
+    expectedPdf: PdfInput,
     opts?: ComparePdfOptions,
 ): Promise<boolean>
 ```
@@ -140,9 +139,24 @@ function comparePdf(
 **Returns:** `true` if all pages are within the configured pixel threshold, `false` otherwise.
 
 **Throws:**
-- `Error: PDF file not found: <path>` — string path that does not exist on disk
-- `Error: Unknown input file type.` — input is neither `Buffer` nor `string`
-- `Error: Compare Threshold cannot be less than 0.` — `opts.compareThreshold < 0`
+- `ComparePdfInputError` — unsupported input types, missing files, unreadable files, or non-file paths
+- `ComparePdfConfigurationError` — invalid options, invalid thresholds/page numbers, or path-boundary violations
+- `ComparePdfRenderingError` — renderer failures or missing rendered page content
+- `ComparePdfComparisonError` — PNG comparison failures
+
+### `comparePdfDetailed(actualPdf, expectedPdf, opts?)`
+
+**Signature:**
+```typescript
+function comparePdfDetailed(
+    actualPdf: PdfInput,
+    expectedPdf: PdfInput,
+    opts?: ComparePdfOptions,
+): Promise<ComparePdfDetailedResult>
+```
+
+Returns the structured result that powers `comparePdf()`, including page-level mismatch details and
+diff output metadata.
 
 ---
 
@@ -175,27 +189,29 @@ All other `PdfToPngOptions` fields are passed through as-is. Useful options:
 
 ```typescript
 type ExcludedPageArea = {
-    pageNumber: number;          // Informational only — matching uses array index
-    excludedAreas?: Area[];      // [{ x1, y1, x2, y2 }] in pixels at viewportScale
-    excludedAreaColor?: Color;   // { r, g, b } 0–255; fill color in diff images
+    pageNumber: number;          // 1-based rendered page number this exclusion applies to
+    excludedAreas?: PageArea[];  // [{ x1, y1, x2, y2 }] in pixels at viewportScale
+    excludedAreaColor?: RgbColor;   // { r, g, b } 0–255; fill color in diff images
     diffFilePath?: string;       // Override diff image output path for this page
     matchingThreshold?: number;  // Per-page threshold, overrides compareThreshold
 };
 ```
 
-`Area` and `Color` are imported from `png-visual-compare`.
+`ExcludedPageArea` remains exported as a backwards-compatible alias of `PageExclusion`, which uses
+`PageArea` and `RgbColor` from this library's public API.
 
 ---
 
 ## Key Conventions
 
-### `excludedAreas` is matched by array index, not `pageNumber`
+### `excludedAreas` is matched by rendered `pageNumber`
 
-The `pageNumber` field on `ExcludedPageArea` is **metadata only** — it has no effect on which page the exclusion is applied to. Matching is strictly positional: `excludedAreas[0]` applies to page 1, `excludedAreas[1]` to page 2, etc.
+Each `ExcludedPageArea` entry applies to the rendered page whose `pageNumber` matches the entry.
+Entries for pages that were not rendered are ignored, and when multiple entries target the same page
+the first matching entry wins.
 
 ```typescript
-// This excludes an area on page 1 (index 0) and another on page 2 (index 1),
-// regardless of what pageNumber values are set:
+// This excludes areas on rendered pages 1 and 2:
 excludedAreas: [
     { pageNumber: 1, excludedAreas: [{ x1: 700, y1: 375, x2: 790, y2: 400 }] },
     { pageNumber: 2, excludedAreas: [{ x1: 680, y1: 240, x2: 955, y2: 465 }] },
@@ -214,17 +230,20 @@ excludedAreas: [
 
 All intra-package imports use `.js` extensions despite the source being TypeScript:
 ```typescript
-import { DEFAULT_DIFFS_FOLDER } from './const.js';
+import { getDefaultDiffsFolder } from './const.js';
 ```
 This is required by `"moduleResolution": "node16"` in `tsconfig.json`. The TypeScript compiler maps `.js` back to `.ts` sources at compile time.
 
-### Page matching by name
+### Page matching by `pageNumber`
 
-When pages of differing counts are compared, the expected page is found by `pngPage.name` equality, not by index. If no matching name is found, an empty string is passed to `comparePng`, which will produce a non-zero diff ensuring the comparison fails.
+The comparison plan is keyed by renderer-reported `pageNumber`, not by PNG filename. Missing pages
+are surfaced as `missing-actual` / `missing-expected` page results in the detailed API and make the
+boolean API return `false`.
 
-### Array swap for different page counts
+### No page-array swap logic
 
-If `actualPdfPngPages.length < expectedPdfPngPages.length`, the two arrays are **swapped** so that the longer one is always `actualPdfPngPages`. This ensures the `forEach` loop iterates over every page, guaranteeing a mismatch is detected when page counts differ.
+The current flow does not swap rendered page arrays. It builds a sorted page-number comparison plan
+from both inputs and compares exactly the planned page pairs.
 
 ---
 
