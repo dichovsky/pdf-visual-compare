@@ -190,14 +190,15 @@ All other `PdfToPngOptions` fields are passed through as-is. Useful options:
 ```typescript
 type ExcludedPageArea = {
     pageNumber: number;          // 1-based rendered page number this exclusion applies to
-    excludedAreas?: Area[];      // [{ x1, y1, x2, y2 }] in pixels at viewportScale
-    excludedAreaColor?: Color;   // { r, g, b } 0–255; fill color in diff images
+    excludedAreas?: PageArea[];  // [{ x1, y1, x2, y2 }] in pixels at viewportScale
+    excludedAreaColor?: RgbColor;   // { r, g, b } 0–255; fill color in diff images
     diffFilePath?: string;       // Override diff image output path for this page
     matchingThreshold?: number;  // Per-page threshold, overrides compareThreshold
 };
 ```
 
-`Area` and `Color` are imported from `png-visual-compare`.
+`ExcludedPageArea` remains exported as a backwards-compatible alias of `PageExclusion`, which uses
+`PageArea` and `RgbColor` from this library's public API.
 
 ---
 
@@ -229,7 +230,7 @@ excludedAreas: [
 
 All intra-package imports use `.js` extensions despite the source being TypeScript:
 ```typescript
-import { DEFAULT_DIFFS_FOLDER } from './const.js';
+import { getDefaultDiffsFolder } from './const.js';
 ```
 This is required by `"moduleResolution": "node16"` in `tsconfig.json`. The TypeScript compiler maps `.js` back to `.ts` sources at compile time.
 
