@@ -37,8 +37,8 @@ export type PageExclusion = {
      * Override the diff image output file path for this specific page.
      * When set, takes precedence over the path derived from `diffsOutputFolder`.
      * When omitted, the path is auto-generated as `<diffsOutputFolder>/diff_<pageName>`.
-     * The resolved path must stay within `diffsOutputFolder`, otherwise `comparePdf` throws
-     * `ComparePdfConfigurationError`.
+     * When diff writing is enabled, the resolved path must stay within `diffsOutputFolder`,
+     * otherwise `comparePdf` throws `ComparePdfConfigurationError`.
      */
     diffFilePath?: string;
 
