@@ -679,40 +679,26 @@ function serialize(output: Output): string {
   return MD_PREAMBLE + FENCE_OPEN + JSON.stringify(output, null, 2) + FENCE_CLOSE;
 }
 
-function lcsDiff(expected: string, actual: string, maxLines: number): string {
+function firstDivergenceDiff(expected: string, actual: string, maxLines: number): string {
+  // Linear-memory diff: locate the first line where outputs diverge, show a few
+  // lines of leading context, then emit remaining lines as paired `-`/`+`.
+  // Sufficient for "you forgot to regen" feedback without an O(m·n) LCS table.
   const expLines = expected.split('\n');
   const actLines = actual.split('\n');
-  const m = expLines.length;
-  const n = actLines.length;
-  // Standard LCS table; bounded by repo size — adequate for ≤150KB outputs.
-  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-  for (let i = m - 1; i >= 0; i--) {
-    for (let j = n - 1; j >= 0; j--) {
-      dp[i][j] =
-        expLines[i] === actLines[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    }
-  }
-  const out: string[] = [];
+  const common = Math.min(expLines.length, actLines.length);
   let i = 0;
-  let j = 0;
-  while (i < m && j < n && out.length < maxLines) {
-    if (expLines[i] === actLines[j]) {
-      out.push(`  ${expLines[i]}`);
-      i++;
-      j++;
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out.push(`- ${expLines[i]}`);
-      i++;
-    } else {
-      out.push(`+ ${actLines[j]}`);
-      j++;
+  while (i < common && expLines[i] === actLines[i]) i++;
+  const ctx = Math.min(3, i);
+  const out: string[] = [];
+  for (let k = i - ctx; k < i; k++) out.push(`  ${expLines[k]}`);
+  let ei = i;
+  let ai = i;
+  while (out.length < maxLines && (ei < expLines.length || ai < actLines.length)) {
+    if (ei < expLines.length) {
+      out.push(`- ${expLines[ei++]}`);
+      if (out.length >= maxLines) break;
     }
-  }
-  while (i < m && out.length < maxLines) {
-    out.push(`- ${expLines[i++]}`);
-  }
-  while (j < n && out.length < maxLines) {
-    out.push(`+ ${actLines[j++]}`);
+    if (ai < actLines.length) out.push(`+ ${actLines[ai++]}`);
   }
   return out.join('\n');
 }
@@ -742,7 +728,7 @@ function runCheck(): void {
     stdout.write('✓ CODEMAP.md is up to date\n');
     exit(0);
   }
-  const diff = lcsDiff(expected, actual, 40);
+  const diff = firstDivergenceDiff(expected, actual, 40);
   stderr.write(diff + '\n');
   stderr.write('✗ CODEMAP.md is stale. Run `npm run codemap` and commit the result.\n');
   maybeWarnSize(expected);
