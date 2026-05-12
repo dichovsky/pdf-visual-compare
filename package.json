@@ -64,7 +64,7 @@
     "png-visual-compare": "~6.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.7.0",
     "@types/pngjs": "^6.0.5",
     "@vitest/coverage-v8": "^4.1.5",
     "eslint": "^10.3.0",
