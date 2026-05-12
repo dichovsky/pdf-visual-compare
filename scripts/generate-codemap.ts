@@ -679,26 +679,28 @@ function serialize(output: Output): string {
   return MD_PREAMBLE + FENCE_OPEN + JSON.stringify(output, null, 2) + FENCE_CLOSE;
 }
 
-function firstDivergenceDiff(expected: string, actual: string, maxLines: number): string {
+function firstDivergenceDiff(onDisk: string, fresh: string, maxLines: number): string {
   // Linear-memory diff: locate the first line where outputs diverge, show a few
   // lines of leading context, then emit remaining lines as paired `-`/`+`.
-  // Sufficient for "you forgot to regen" feedback without an O(m·n) LCS table.
-  const expLines = expected.split('\n');
-  const actLines = actual.split('\n');
-  const common = Math.min(expLines.length, actLines.length);
+  // Follows unified-diff convention: `-` is the on-disk (stale) content that
+  // needs to be removed; `+` is the freshly generated content that needs to
+  // replace it.
+  const onDiskLines = onDisk.split('\n');
+  const freshLines = fresh.split('\n');
+  const common = Math.min(onDiskLines.length, freshLines.length);
   let i = 0;
-  while (i < common && expLines[i] === actLines[i]) i++;
+  while (i < common && onDiskLines[i] === freshLines[i]) i++;
   const ctx = Math.min(3, i);
   const out: string[] = [];
-  for (let k = i - ctx; k < i; k++) out.push(`  ${expLines[k]}`);
-  let ei = i;
-  let ai = i;
-  while (out.length < maxLines && (ei < expLines.length || ai < actLines.length)) {
-    if (ei < expLines.length) {
-      out.push(`- ${expLines[ei++]}`);
+  for (let k = i - ctx; k < i; k++) out.push(`  ${onDiskLines[k]}`);
+  let di = i;
+  let fi = i;
+  while (out.length < maxLines && (di < onDiskLines.length || fi < freshLines.length)) {
+    if (di < onDiskLines.length) {
+      out.push(`- ${onDiskLines[di++]}`);
       if (out.length >= maxLines) break;
     }
-    if (ai < actLines.length) out.push(`+ ${actLines[ai++]}`);
+    if (fi < freshLines.length) out.push(`+ ${freshLines[fi++]}`);
   }
   return out.join('\n');
 }
@@ -728,7 +730,7 @@ function runCheck(): void {
     stdout.write('✓ CODEMAP.md is up to date\n');
     exit(0);
   }
-  const diff = firstDivergenceDiff(expected, actual, 40);
+  const diff = firstDivergenceDiff(actual, expected, 40);
   stderr.write(diff + '\n');
   stderr.write('✗ CODEMAP.md is stale. Run `npm run codemap` and commit the result.\n');
   maybeWarnSize(expected);

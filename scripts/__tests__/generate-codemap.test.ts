@@ -157,6 +157,15 @@ describe('generate-codemap', () => {
     expect(r.code).toBe(1);
     expect(r.stderr).toContain('stale');
     expect(r.stderr).toMatch(/[+-] /);
+    // Unified-diff convention: `-` is on-disk (stale, must be removed); `+`
+    // is the freshly generated content (must be added). The new symbol `y`
+    // only exists in the fresh content, so it must appear on `+` lines and
+    // never on `-` lines.
+    const stderrLines = r.stderr.split('\n');
+    const minusLines = stderrLines.filter((l) => l.startsWith('- '));
+    const plusLines = stderrLines.filter((l) => l.startsWith('+ '));
+    expect(plusLines.some((l) => l.includes('"y"'))).toBe(true);
+    expect(minusLines.some((l) => l.includes('"y"'))).toBe(false);
   });
 
   test('exclude globs prevent matching files from appearing in the output', () => {
