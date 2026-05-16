@@ -1,4 +1,4 @@
-import { closeSync, existsSync, fstatSync, openSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, constants, existsSync, fstatSync, openSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { ComparePdfConfigurationError } from '../errors/ComparePdfConfigurationError.js';
 import { ComparePdfInputError } from '../errors/ComparePdfInputError.js';
@@ -34,11 +34,14 @@ export function normalizePdfInput(
             if (!canonicalInputStats.isFile()) {
                 throw new ComparePdfInputError(`PDF path is not a file: ${inputFile}`);
             }
-            inputFileDescriptor = openSync(canonicalInputPath, 'r');
+            inputFileDescriptor = openSync(canonicalInputPath, openFlagsFor(allowedInputRoot));
 
             if (allowedInputRoot) {
                 const openedInputStats = fstatSync(inputFileDescriptor);
-                if (openedInputStats.dev !== canonicalInputStats.dev || openedInputStats.ino !== canonicalInputStats.ino) {
+                if (
+                    openedInputStats.dev !== canonicalInputStats.dev ||
+                    openedInputStats.ino !== canonicalInputStats.ino
+                ) {
                     throw new ComparePdfConfigurationError(
                         `${inputLabel} must resolve within allowedInputRoot: ${allowedInputRoot.displayPath}`,
                     );
@@ -47,7 +50,7 @@ export function normalizePdfInput(
 
             return readFileSync(inputFileDescriptor);
         } catch (cause) {
-            throw wrapPdfInputReadError(cause, inputFile);
+            throw wrapPdfInputReadError(cause, inputFile, inputLabel, allowedInputRoot);
         } finally {
             if (inputFileDescriptor !== undefined) {
                 closeSync(inputFileDescriptor);
@@ -75,7 +78,9 @@ export function validateAllowedInputRoot(
     const canonicalRootPath = realpathSync(resolvedRootPath);
 
     if (!statSync(canonicalRootPath).isDirectory()) {
-        throw new ComparePdfConfigurationError(`allowedInputRoot must point to an existing directory: ${allowedInputRoot}`);
+        throw new ComparePdfConfigurationError(
+            `allowedInputRoot must point to an existing directory: ${allowedInputRoot}`,
+        );
     }
 
     return {
@@ -85,12 +90,30 @@ export function validateAllowedInputRoot(
     };
 }
 
-function wrapPdfInputReadError(cause: unknown, inputFile: string): ComparePdfInputError {
+function openFlagsFor(allowedInputRoot: AllowedInputRoot | undefined): number {
+    // When allowedInputRoot is configured, refuse to follow a symlink at the canonical leaf.
+    // This closes a TOCTOU window where an attacker swaps the resolved file with a symlink
+    // between realpathSync and openSync, which would otherwise traverse out of the sandbox.
+    return allowedInputRoot ? constants.O_RDONLY | constants.O_NOFOLLOW : constants.O_RDONLY;
+}
+
+function wrapPdfInputReadError(
+    cause: unknown,
+    inputFile: string,
+    inputLabel: 'actualPdf' | 'expectedPdf',
+    allowedInputRoot: AllowedInputRoot | undefined,
+): ComparePdfInputError {
     if (cause instanceof ComparePdfInputError) {
         throw cause;
     }
     if (cause instanceof ComparePdfConfigurationError) {
         throw cause;
+    }
+    if (allowedInputRoot && isSymbolicLinkOpenError(cause)) {
+        throw new ComparePdfConfigurationError(
+            `${inputLabel} must resolve within allowedInputRoot: ${allowedInputRoot.displayPath}`,
+            { cause },
+        );
     }
     if (isMissingPdfInputError(cause)) {
         return new ComparePdfInputError(`PDF file not found: ${inputFile}`, { cause });
@@ -101,6 +124,10 @@ function wrapPdfInputReadError(cause: unknown, inputFile: string): ComparePdfInp
 
 function isMissingPdfInputError(cause: unknown): cause is NodeJS.ErrnoException {
     return cause instanceof Error && 'code' in cause && (cause.code === 'ENOENT' || cause.code === 'ENOTDIR');
+}
+
+function isSymbolicLinkOpenError(cause: unknown): cause is NodeJS.ErrnoException {
+    return cause instanceof Error && 'code' in cause && (cause.code === 'ELOOP' || cause.code === 'EMLINK');
 }
 
 function assertStringPathWithinAllowedInputRoot(

@@ -6,6 +6,8 @@ import {
     assertCanonicalDiffOutputPath,
     assertDiffOutputPathUsesRealFilesystemEntries,
     ensureDiffOutputDirectory,
+    preCreateDiffOutputLeaf,
+    verifyDiffOutputLeafAfterWrite,
 } from './diffOutputGuards.js';
 import type { NormalizedComparePdfOptions, PageComparisonPlanEntry } from './types.js';
 
@@ -43,6 +45,9 @@ export function comparePlannedPage(
         ensureDiffOutputDirectory(diffFilePath, normalizedOptions.diffsOutputFolder);
         assertDiffOutputPathUsesRealFilesystemEntries(diffFilePath, normalizedOptions.diffsOutputFolder);
         assertCanonicalDiffOutputPath(diffFilePath, normalizedOptions.diffsOutputFolder);
+        // Atomically claim the leaf path with a real regular file so the comparator's write
+        // cannot follow a symlink planted after the guards above passed (CWE-367 / CWE-61).
+        preCreateDiffOutputLeaf(diffFilePath, normalizedOptions.diffsOutputFolder);
     }
 
     let mismatchCount: number;
@@ -52,6 +57,11 @@ export function comparePlannedPage(
         throw new ComparePdfComparisonError(`Failed to compare rendered PDF page ${planEntry.pageNumber}.`, {
             cause,
         });
+    }
+
+    if (diffFilePath) {
+        // Detect post-write tampering and remove the empty placeholder when no diff was written.
+        verifyDiffOutputLeafAfterWrite(diffFilePath, normalizedOptions.diffsOutputFolder);
     }
 
     const isEqual = mismatchCount <= threshold;
