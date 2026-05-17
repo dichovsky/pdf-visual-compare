@@ -5,10 +5,10 @@ import { toComparePngOptions } from './adapters/comparePngOptions.js';
 import {
     assertCanonicalDiffOutputPath,
     assertDiffOutputPathUsesRealFilesystemEntries,
+    createSecureDiffOutputTempfile,
     discardDiffOutputLeaf,
     ensureDiffOutputDirectory,
-    preCreateDiffOutputLeaf,
-    verifyDiffOutputLeafAfterWrite,
+    publishDiffOutputTempfile,
 } from './diffOutputGuards.js';
 import type { NormalizedComparePdfOptions, PageComparisonPlanEntry } from './types.js';
 
@@ -33,42 +33,51 @@ export function comparePlannedPage(
         };
     }
 
-    const comparePngOptions = toComparePngOptions(
+    const resolvedComparePngOptions = toComparePngOptions(
         planEntry.pageExclusion,
         normalizedOptions.diffsOutputFolder,
         planEntry.actualPage.name,
         normalizedOptions.writeDiffs,
     );
-    const diffFilePath = comparePngOptions.diffFilePath ?? null;
+    const diffFilePath = resolvedComparePngOptions.diffFilePath ?? null;
 
+    let stagedTempfilePath: string | undefined;
+    let scopedComparePngOptions = resolvedComparePngOptions;
     if (diffFilePath) {
         assertDiffOutputPathUsesRealFilesystemEntries(diffFilePath, normalizedOptions.diffsOutputFolder);
         ensureDiffOutputDirectory(diffFilePath, normalizedOptions.diffsOutputFolder);
         assertDiffOutputPathUsesRealFilesystemEntries(diffFilePath, normalizedOptions.diffsOutputFolder);
         assertCanonicalDiffOutputPath(diffFilePath, normalizedOptions.diffsOutputFolder);
-        // Atomically claim the leaf path with a real regular file so the comparator's write
-        // cannot follow a symlink planted after the guards above passed (CWE-367 / CWE-61).
-        preCreateDiffOutputLeaf(diffFilePath, normalizedOptions.diffsOutputFolder);
+        // Stage the comparator's write at a securely-created random-named tempfile in the
+        // same directory, then atomically rename into diffFilePath afterwards. rename()
+        // replaces any symlink planted at diffFilePath during the write window without
+        // following it, which is the only way to actually prevent — not just detect — a
+        // redirected write when the comparator's API takes a path rather than an fd
+        // (CWE-61 / CWE-367).
+        stagedTempfilePath = createSecureDiffOutputTempfile(diffFilePath, normalizedOptions.diffsOutputFolder);
+        scopedComparePngOptions = { ...resolvedComparePngOptions, diffFilePath: stagedTempfilePath };
     }
 
     let mismatchCount: number;
     try {
-        mismatchCount = comparePng(planEntry.actualPage.content, planEntry.expectedPage.content, comparePngOptions);
+        mismatchCount = comparePng(
+            planEntry.actualPage.content,
+            planEntry.expectedPage.content,
+            scopedComparePngOptions,
+        );
     } catch (cause) {
-        // Roll back the pre-created placeholder so an empty zero-byte leaf does not leak into
-        // the diffs folder on the comparator's error path (would otherwise confuse CI artifacts).
-        if (diffFilePath) {
-            discardDiffOutputLeaf(diffFilePath);
+        // Roll back the staged tempfile so a zero-byte file does not leak into the diffs
+        // folder on the comparator's error path (would otherwise confuse CI artifacts).
+        if (stagedTempfilePath) {
+            discardDiffOutputLeaf(stagedTempfilePath);
         }
         throw new ComparePdfComparisonError(`Failed to compare rendered PDF page ${planEntry.pageNumber}.`, {
             cause,
         });
     }
 
-    if (diffFilePath) {
-        // Detect post-write tampering, surface missing/empty leaves when a diff was expected,
-        // and remove the empty placeholder when no diff was written for matching pages.
-        verifyDiffOutputLeafAfterWrite(diffFilePath, normalizedOptions.diffsOutputFolder, {
+    if (stagedTempfilePath && diffFilePath) {
+        publishDiffOutputTempfile(stagedTempfilePath, diffFilePath, normalizedOptions.diffsOutputFolder, {
             expectDiffWritten: mismatchCount > threshold,
         });
     }

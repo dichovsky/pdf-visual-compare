@@ -6,10 +6,12 @@ import {
     mkdirSync,
     openSync,
     realpathSync,
+    renameSync,
     statSync,
     unlinkSync,
 } from 'node:fs';
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { ComparePdfConfigurationError } from '../errors/ComparePdfConfigurationError.js';
 import { getDefaultDiffsFolder } from '../const.js';
 import type { ComparePdfOptions } from '../types/ComparePdfOptions.js';
@@ -69,23 +71,27 @@ export function assertDiffOutputPathUsesRealFilesystemEntries(diffFilePath: stri
 }
 
 /**
- * Atomically pre-creates the diff leaf file so the subsequent third-party write cannot follow
- * a symlink that was planted between the path validation and the actual write.
+ * Atomically creates a fresh, randomly-named tempfile in the same directory as the diff leaf
+ * and returns its path. The third-party comparator is then directed at this tempfile, and the
+ * result is later promoted into `diffFilePath` via {@link publishDiffOutputTempfile}.
  *
- * Any stale regular file or symlink from a prior run is removed first so the existing
- * "overwrite previous diff" behavior is preserved. The new leaf is then opened with
- * `O_CREAT | O_EXCL | O_NOFOLLOW`, which:
- * - fails if any file appears at the leaf between the unlink and this open (CWE-367);
- * - fails if the leaf is or becomes a symbolic link before this open completes (CWE-61);
- * - never traverses an existing symlink at the leaf component.
+ * This two-step "stage then rename" pattern is materially stronger than writing directly to
+ * `diffFilePath`:
+ * - The tempfile name carries an unpredictable random suffix, so an attacker with write
+ *   access in `diffsOutputFolder` cannot pre-plant a symlink at the future tempfile path.
+ * - The tempfile is opened with `O_CREAT | O_EXCL | O_NOFOLLOW`, so any racing attempt to
+ *   pre-create a regular file or symlink at the same path during the open is rejected
+ *   (CWE-61 / CWE-367).
+ * - The eventual atomic `renameSync` (see {@link publishDiffOutputTempfile}) replaces any
+ *   pre-existing entry at `diffFilePath` — including a symlink planted there during the
+ *   write window — without ever following the destination's symlink.
  */
-export function preCreateDiffOutputLeaf(diffFilePath: string, diffsOutputFolder: string): void {
-    removeStaleDiffLeaf(diffFilePath, diffsOutputFolder);
-
+export function createSecureDiffOutputTempfile(diffFilePath: string, diffsOutputFolder: string): string {
+    const tempfilePath = buildSecureTempfilePath(diffFilePath);
     let fileDescriptor: number | undefined;
     try {
         fileDescriptor = openSync(
-            diffFilePath,
+            tempfilePath,
             constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
             0o600,
         );
@@ -105,65 +111,66 @@ export function preCreateDiffOutputLeaf(diffFilePath: string, diffsOutputFolder:
             closeSync(fileDescriptor);
         }
     }
+    return tempfilePath;
 }
 
-function removeStaleDiffLeaf(diffFilePath: string, diffsOutputFolder: string): void {
-    try {
-        unlinkSync(diffFilePath);
-    } catch (cause) {
-        if (isMissingLeafError(cause)) {
-            return;
-        }
-        throw new ComparePdfConfigurationError(
-            `diffsOutputFolder must point to a writable directory: ${diffsOutputFolder}`,
-            { cause },
-        );
-    }
+function buildSecureTempfilePath(diffFilePath: string): string {
+    const parentDir = dirname(diffFilePath);
+    const leafName = basename(diffFilePath);
+    // 128 bits of randomness make pre-planting the tempfile path infeasible even for an
+    // attacker who can race writes inside the diffs folder.
+    const randomSuffix = randomBytes(16).toString('hex');
+    return resolve(parentDir, `.${leafName}.${randomSuffix}.tmp`);
 }
 
-export type VerifyDiffOutputLeafOptions = {
+export type PublishDiffOutputTempfileOptions = {
     /**
      * `true` when the comparator was expected to produce a diff PNG (mismatched pages above
-     * threshold). A missing or empty leaf in that case becomes a `ComparePdfConfigurationError`
-     * because the diff bytes must already be on disk; their absence implies attacker deletion
-     * or a silent failure that callers must surface.
+     * threshold). A missing or empty tempfile in that case becomes a
+     * `ComparePdfConfigurationError` because the diff bytes must already be on disk; their
+     * absence implies attacker deletion, a symlink-redirected write, or a silent comparator
+     * failure that callers must surface.
      *
      * `false` when the comparator was expected to skip writing (matching pages). Missing or
-     * empty leaf is then the normal "no diff to report" case and the placeholder is cleaned up.
+     * empty tempfile is then the normal "no diff to report" case; any stale leaf at the final
+     * path is removed so on-disk state matches the pre-fix behavior.
      */
     expectDiffWritten: boolean;
 };
 
 /**
- * After the third-party comparator returns, confirm the diff leaf matches the expected state:
- * a real regular file when a diff was expected, or no file (placeholder cleaned up) when not.
+ * Promotes the staged tempfile to `diffFilePath` via atomic `renameSync`. This is the
+ * core anti-TOCTOU primitive: `rename()` replaces any pre-existing file or symlink at
+ * the destination as a single directory-entry operation without ever following the
+ * destination. A symlink planted at `diffFilePath` during the write window is therefore
+ * harmlessly overwritten — the attacker's chosen target is never opened by this library.
  *
  * Throws `ComparePdfConfigurationError` when:
- * - the leaf is no longer a regular file (symlink swap during the write window — diff bytes
- *   may have leaked through to an attacker-chosen target);
- * - a diff was expected but the leaf is missing or zero bytes (attacker deletion or silent
- *   comparator failure);
- * - the leaf cannot be inspected for reasons other than absence.
+ * - the tempfile is no longer a regular file (symlink swap during the comparator's write
+ *   — bytes may have leaked through the swapped symlink to an attacker-chosen target);
+ * - a diff was expected but the tempfile is missing or zero bytes;
+ * - the tempfile cannot be inspected, or rename fails for reasons other than absence.
  */
-export function verifyDiffOutputLeafAfterWrite(
+export function publishDiffOutputTempfile(
+    tempfilePath: string,
     diffFilePath: string,
     diffsOutputFolder: string,
-    options: VerifyDiffOutputLeafOptions,
+    options: PublishDiffOutputTempfileOptions,
 ): void {
-    let leafStats;
+    let tempStats: ReturnType<typeof lstatSync>;
     try {
-        leafStats = lstatSync(diffFilePath);
+        tempStats = lstatSync(tempfilePath);
     } catch (cause) {
         if (isMissingLeafError(cause)) {
-            // Absence is only acceptable when the comparator was expected to skip writing.
-            // Otherwise the placeholder we pre-created was removed during the write window
-            // (attacker deletion, racing process, or comparator silently failing).
             if (options.expectDiffWritten) {
                 throw new ComparePdfConfigurationError(
                     `Diff output was expected but is missing: ${resolve(diffFilePath)}`,
                     { cause },
                 );
             }
+            // Comparator skipped writing AND there is no tempfile — also drop any stale
+            // leaf at the published path so the on-disk shape matches pre-fix behavior.
+            discardDiffOutputLeaf(diffFilePath);
             return;
         }
         throw new ComparePdfConfigurationError(
@@ -172,27 +179,34 @@ export function verifyDiffOutputLeafAfterWrite(
         );
     }
 
-    if (!leafStats.isFile()) {
-        discardDiffOutputLeaf(diffFilePath);
+    if (!tempStats.isFile()) {
+        discardDiffOutputLeaf(tempfilePath);
         throw new ComparePdfConfigurationError(
-            `Diff output path was replaced during the write window: ${resolve(diffFilePath)}`,
+            `Diff output tempfile was replaced during the write window: ${resolve(tempfilePath)}`,
         );
     }
 
-    if (leafStats.size === 0) {
-        // Empty file: comparator did not write. Always remove the placeholder so the on-disk
-        // shape matches pre-fix behavior; surface an error when bytes were expected.
-        discardDiffOutputLeaf(diffFilePath);
+    if (tempStats.size === 0) {
+        discardDiffOutputLeaf(tempfilePath);
         if (options.expectDiffWritten) {
             throw new ComparePdfConfigurationError(`Diff output was expected but is empty: ${resolve(diffFilePath)}`);
         }
+        discardDiffOutputLeaf(diffFilePath);
+        return;
+    }
+
+    try {
+        renameSync(tempfilePath, diffFilePath);
+    } catch (cause) {
+        discardDiffOutputLeaf(tempfilePath);
+        throw new ComparePdfConfigurationError(`Failed to publish diff output to ${resolve(diffFilePath)}`, { cause });
     }
 }
 
 /**
- * Best-effort removal of the pre-created diff leaf. Callers use this to roll back the
- * placeholder when the third-party comparator throws before writing — otherwise the
- * zero-byte placeholder leaks into the diffs folder and confuses CI artifact pipelines.
+ * Best-effort removal of a diff output file. Callers use this to roll back the staged
+ * tempfile when the third-party comparator throws before writing, and to clear stale
+ * leaves at the published path when no diff was produced for matching pages.
  */
 export function discardDiffOutputLeaf(diffFilePath: string): void {
     try {

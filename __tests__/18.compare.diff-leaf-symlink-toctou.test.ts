@@ -1,8 +1,25 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { platform } from 'node:process';
 import { beforeEach, expect, test } from 'vitest';
 import { ComparePdfConfigurationError, comparePdf, comparePdfDetailed } from '../src/index.js';
+
+function leafExists(path: string): boolean {
+    try {
+        lstatSync(path);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function isSymbolicLink(path: string): boolean {
+    try {
+        return lstatSync(path).isSymbolicLink();
+    } catch {
+        return false;
+    }
+}
 
 const DIFF_ROOT = resolve('./test-results/compare/18-diff-leaf-symlink-toctou');
 
@@ -17,7 +34,7 @@ beforeEach(() => {
     rmSync(DIFF_ROOT, { recursive: true, force: true });
 });
 
-test('should refuse to write through a symlink planted at the auto-generated diff leaf', async () => {
+test('should reject a pre-planted symlink at the auto-generated diff leaf via the path walker', async () => {
     const diffsOutputFolder = ensureCleanRoot('auto-leaf');
     const escapeTarget = resolve(DIFF_ROOT, 'auto-leaf-escape-target.png');
     rmSync(escapeTarget, { force: true });
@@ -30,18 +47,16 @@ test('should refuse to write through a symlink planted at the auto-generated dif
         diffsOutputFolder,
     });
 
-    // Either the symlink is rejected (preferred path) or the planted leaf is removed and
-    // replaced with a real regular file pointing nowhere outside the diffs root.
-    await comparePromise.catch(() => undefined);
-
-    expect(existsSync(escapeTarget)).toBe(false);
-    // The leaf must no longer be a symlink — either deleted or replaced with a real file.
-    if (existsSync(plantedLeaf)) {
-        expect(statSync(plantedLeaf).isFile()).toBe(true);
-    }
+    await expect(comparePromise).rejects.toThrow(ComparePdfConfigurationError);
+    await expect(comparePromise).rejects.toThrow(/Diff output path must stay within diffsOutputFolder/);
+    // Use lstat (not existsSync) so a dangling symlink at the escape target would still
+    // register as "no file" while a live symlink would be detected.
+    expect(leafExists(escapeTarget)).toBe(false);
+    // The original symlink stays in place — the library refused to engage with the path at all.
+    expect(isSymbolicLink(plantedLeaf)).toBe(true);
 });
 
-test('should reject a user-configured diffFilePath that already exists as a symlink', async () => {
+test('should reject a pre-planted symlink at a user-configured diffFilePath', async () => {
     const diffsOutputFolder = ensureCleanRoot('user-leaf');
     const escapeTarget = resolve(DIFF_ROOT, 'user-leaf-escape-target.png');
     rmSync(escapeTarget, { force: true });
@@ -57,7 +72,8 @@ test('should reject a user-configured diffFilePath that already exists as a syml
 
     await expect(comparePromise).rejects.toThrow(ComparePdfConfigurationError);
     await expect(comparePromise).rejects.toThrow(/Diff output path must stay within diffsOutputFolder/);
-    expect(existsSync(escapeTarget)).toBe(false);
+    expect(leafExists(escapeTarget)).toBe(false);
+    expect(isSymbolicLink(userDiffPath)).toBe(true);
 });
 
 test('should still overwrite a stale regular-file diff leaf from a prior comparison run', async () => {
@@ -84,10 +100,11 @@ test('should NOT leave an empty placeholder file when pages match (writeDiffs=tr
     });
 
     expect(result.isEqual).toBe(true);
-    // The placeholder created by preCreateDiffOutputLeaf must be removed when comparePng
-    // wrote nothing — otherwise consumers would see misleading zero-byte diff files.
-    const placeholderPath = resolve(diffsOutputFolder, 'diff_comparePdf_1.png');
-    expect(existsSync(placeholderPath)).toBe(false);
+    // Neither the staged tempfile nor a published leaf may remain — consumers expect "no
+    // diff file" when there is no diff. Use lstat-based checks so a dangling symlink would
+    // also be caught (existsSync would silently return false on a broken symlink).
+    const publishedLeaf = resolve(diffsOutputFolder, 'diff_comparePdf_1.png');
+    expect(leafExists(publishedLeaf)).toBe(false);
 });
 
 // POSIX-only: mode 0o500 is ignored on Windows (NTFS uses ACLs rather than mode bits), so
