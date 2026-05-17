@@ -28,14 +28,45 @@ beforeEach(() => {
     unlinkSyncMock.mockReset();
 });
 
-test('should treat ENOENT from lstat as "no diff written" and return cleanly', () => {
+test('should treat ENOENT from lstat as "no diff written" and return cleanly when none expected', () => {
     const enoent = Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
     lstatSyncMock.mockImplementation(() => {
         throw enoent;
     });
 
-    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs')).not.toThrow();
+    expect(() =>
+        verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: false }),
+    ).not.toThrow();
     expect(unlinkSyncMock).not.toHaveBeenCalled();
+});
+
+test('should surface ENOENT from lstat as configuration error when a diff was expected', () => {
+    const enoent = Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    lstatSyncMock.mockImplementation(() => {
+        throw enoent;
+    });
+
+    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: true })).toThrow(
+        ComparePdfConfigurationError,
+    );
+    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: true })).toThrow(
+        'Diff output was expected but is missing',
+    );
+});
+
+test('should surface zero-byte leaf as configuration error when a diff was expected', () => {
+    lstatSyncMock.mockReturnValue({
+        isFile: () => true,
+        size: 0,
+    });
+
+    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: true })).toThrow(
+        ComparePdfConfigurationError,
+    );
+    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: true })).toThrow(
+        'Diff output was expected but is empty',
+    );
+    expect(unlinkSyncMock).toHaveBeenCalledWith('/diffs/leaf.png');
 });
 
 test('should wrap non-ENOENT lstat errors as ComparePdfConfigurationError', () => {
@@ -44,7 +75,9 @@ test('should wrap non-ENOENT lstat errors as ComparePdfConfigurationError', () =
         throw eacces;
     });
 
-    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs')).toThrow(ComparePdfConfigurationError);
+    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: false })).toThrow(
+        ComparePdfConfigurationError,
+    );
 });
 
 test('should detect post-write symlink swap and unlink the tampered leaf', () => {
@@ -53,8 +86,10 @@ test('should detect post-write symlink swap and unlink the tampered leaf', () =>
         size: 0,
     });
 
-    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs')).toThrow(ComparePdfConfigurationError);
-    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs')).toThrow(
+    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: false })).toThrow(
+        ComparePdfConfigurationError,
+    );
+    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: false })).toThrow(
         'Diff output path was replaced during the write window',
     );
     expect(unlinkSyncMock).toHaveBeenCalledWith('/diffs/leaf.png');
@@ -69,7 +104,9 @@ test('should swallow unlink failures during best-effort cleanup', () => {
         throw Object.assign(new Error('EACCES'), { code: 'EACCES' });
     });
 
-    expect(() => verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs')).not.toThrow();
+    expect(() =>
+        verifyDiffOutputLeafAfterWrite('/diffs/leaf.png', '/diffs', { expectDiffWritten: false }),
+    ).not.toThrow();
 });
 
 test('should surface ENOSPC on pre-create open as writable-directory configuration error', () => {

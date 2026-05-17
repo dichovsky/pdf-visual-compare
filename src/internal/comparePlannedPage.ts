@@ -5,6 +5,7 @@ import { toComparePngOptions } from './adapters/comparePngOptions.js';
 import {
     assertCanonicalDiffOutputPath,
     assertDiffOutputPathUsesRealFilesystemEntries,
+    discardDiffOutputLeaf,
     ensureDiffOutputDirectory,
     preCreateDiffOutputLeaf,
     verifyDiffOutputLeafAfterWrite,
@@ -54,14 +55,22 @@ export function comparePlannedPage(
     try {
         mismatchCount = comparePng(planEntry.actualPage.content, planEntry.expectedPage.content, comparePngOptions);
     } catch (cause) {
+        // Roll back the pre-created placeholder so an empty zero-byte leaf does not leak into
+        // the diffs folder on the comparator's error path (would otherwise confuse CI artifacts).
+        if (diffFilePath) {
+            discardDiffOutputLeaf(diffFilePath);
+        }
         throw new ComparePdfComparisonError(`Failed to compare rendered PDF page ${planEntry.pageNumber}.`, {
             cause,
         });
     }
 
     if (diffFilePath) {
-        // Detect post-write tampering and remove the empty placeholder when no diff was written.
-        verifyDiffOutputLeafAfterWrite(diffFilePath, normalizedOptions.diffsOutputFolder);
+        // Detect post-write tampering, surface missing/empty leaves when a diff was expected,
+        // and remove the empty placeholder when no diff was written for matching pages.
+        verifyDiffOutputLeafAfterWrite(diffFilePath, normalizedOptions.diffsOutputFolder, {
+            expectDiffWritten: mismatchCount > threshold,
+        });
     }
 
     const isEqual = mismatchCount <= threshold;

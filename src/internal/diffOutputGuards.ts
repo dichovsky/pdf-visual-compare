@@ -121,22 +121,49 @@ function removeStaleDiffLeaf(diffFilePath: string, diffsOutputFolder: string): v
     }
 }
 
+export type VerifyDiffOutputLeafOptions = {
+    /**
+     * `true` when the comparator was expected to produce a diff PNG (mismatched pages above
+     * threshold). A missing or empty leaf in that case becomes a `ComparePdfConfigurationError`
+     * because the diff bytes must already be on disk; their absence implies attacker deletion
+     * or a silent failure that callers must surface.
+     *
+     * `false` when the comparator was expected to skip writing (matching pages). Missing or
+     * empty leaf is then the normal "no diff to report" case and the placeholder is cleaned up.
+     */
+    expectDiffWritten: boolean;
+};
+
 /**
- * After the third-party comparator returns, confirm the diff leaf is still a real regular file
- * (i.e. nothing swapped a symlink in during the write). If the comparator did not write any
- * bytes (matching pages), removes the empty placeholder so on-disk state matches prior behavior.
+ * After the third-party comparator returns, confirm the diff leaf matches the expected state:
+ * a real regular file when a diff was expected, or no file (placeholder cleaned up) when not.
  *
- * Throws `ComparePdfConfigurationError` when the leaf is no longer a regular file — the diff
- * bytes may have leaked through a swapped symlink, so the caller must surface this as a failure.
+ * Throws `ComparePdfConfigurationError` when:
+ * - the leaf is no longer a regular file (symlink swap during the write window — diff bytes
+ *   may have leaked through to an attacker-chosen target);
+ * - a diff was expected but the leaf is missing or zero bytes (attacker deletion or silent
+ *   comparator failure);
+ * - the leaf cannot be inspected for reasons other than absence.
  */
-export function verifyDiffOutputLeafAfterWrite(diffFilePath: string, diffsOutputFolder: string): void {
+export function verifyDiffOutputLeafAfterWrite(
+    diffFilePath: string,
+    diffsOutputFolder: string,
+    options: VerifyDiffOutputLeafOptions,
+): void {
     let leafStats;
     try {
         leafStats = lstatSync(diffFilePath);
     } catch (cause) {
-        // The comparator may legitimately skip writing for matching pages and the placeholder
-        // may have been removed by a concurrent process; treat absence as "no diff written".
         if (isMissingLeafError(cause)) {
+            // Absence is only acceptable when the comparator was expected to skip writing.
+            // Otherwise the placeholder we pre-created was removed during the write window
+            // (attacker deletion, racing process, or comparator silently failing).
+            if (options.expectDiffWritten) {
+                throw new ComparePdfConfigurationError(
+                    `Diff output was expected but is missing: ${resolve(diffFilePath)}`,
+                    { cause },
+                );
+            }
             return;
         }
         throw new ComparePdfConfigurationError(
@@ -146,20 +173,28 @@ export function verifyDiffOutputLeafAfterWrite(diffFilePath: string, diffsOutput
     }
 
     if (!leafStats.isFile()) {
-        unlinkLeafIgnoringErrors(diffFilePath);
+        discardDiffOutputLeaf(diffFilePath);
         throw new ComparePdfConfigurationError(
             `Diff output path was replaced during the write window: ${resolve(diffFilePath)}`,
         );
     }
 
-    // Comparator did not write (matching pages) — clean up the empty placeholder so the
-    // on-disk shape matches pre-fix behavior (no diff file when there is no diff).
     if (leafStats.size === 0) {
-        unlinkLeafIgnoringErrors(diffFilePath);
+        // Empty file: comparator did not write. Always remove the placeholder so the on-disk
+        // shape matches pre-fix behavior; surface an error when bytes were expected.
+        discardDiffOutputLeaf(diffFilePath);
+        if (options.expectDiffWritten) {
+            throw new ComparePdfConfigurationError(`Diff output was expected but is empty: ${resolve(diffFilePath)}`);
+        }
     }
 }
 
-function unlinkLeafIgnoringErrors(diffFilePath: string): void {
+/**
+ * Best-effort removal of the pre-created diff leaf. Callers use this to roll back the
+ * placeholder when the third-party comparator throws before writing — otherwise the
+ * zero-byte placeholder leaks into the diffs folder and confuses CI artifact pipelines.
+ */
+export function discardDiffOutputLeaf(diffFilePath: string): void {
     try {
         unlinkSync(diffFilePath);
     } catch {

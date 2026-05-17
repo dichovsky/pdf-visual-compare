@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { platform } from 'node:process';
 import { beforeEach, expect, test } from 'vitest';
 import { ComparePdfConfigurationError, comparePdf, comparePdfDetailed } from '../src/index.js';
 
@@ -40,7 +41,7 @@ test('should refuse to write through a symlink planted at the auto-generated dif
     }
 });
 
-test('should refuse a user-configured diffFilePath that already exists as a symlink', async () => {
+test('should reject a user-configured diffFilePath that already exists as a symlink', async () => {
     const diffsOutputFolder = ensureCleanRoot('user-leaf');
     const escapeTarget = resolve(DIFF_ROOT, 'user-leaf-escape-target.png');
     rmSync(escapeTarget, { force: true });
@@ -54,8 +55,8 @@ test('should refuse a user-configured diffFilePath that already exists as a syml
         excludedAreas: [{ pageNumber: 1, diffFilePath: userDiffPath }],
     });
 
-    await comparePromise.catch(() => undefined);
-
+    await expect(comparePromise).rejects.toThrow(ComparePdfConfigurationError);
+    await expect(comparePromise).rejects.toThrow(/Diff output path must stay within diffsOutputFolder/);
     expect(existsSync(escapeTarget)).toBe(false);
 });
 
@@ -89,22 +90,28 @@ test('should NOT leave an empty placeholder file when pages match (writeDiffs=tr
     expect(existsSync(placeholderPath)).toBe(false);
 });
 
-test('should surface ComparePdfConfigurationError when the diff folder is read-only', async () => {
-    const diffsOutputFolder = ensureCleanRoot('readonly');
+// POSIX-only: mode 0o500 is ignored on Windows (NTFS uses ACLs rather than mode bits), so
+// the directory would remain writable and the assertion would never trip. The published
+// package's `os` field already excludes win32, but skip explicitly to be self-documenting.
+test.skipIf(platform === 'win32')(
+    'should surface ComparePdfConfigurationError when the diff folder is read-only',
+    async () => {
+        const diffsOutputFolder = ensureCleanRoot('readonly');
 
-    try {
-        // 0o500 = r-x------; readable + executable but not writable for the owner.
-        rmSync(diffsOutputFolder, { recursive: true, force: true });
-        mkdirSync(diffsOutputFolder, { recursive: true, mode: 0o500 });
+        try {
+            // 0o500 = r-x------; readable + executable but not writable for the owner.
+            rmSync(diffsOutputFolder, { recursive: true, force: true });
+            mkdirSync(diffsOutputFolder, { recursive: true, mode: 0o500 });
 
-        await expect(
-            comparePdfDetailed('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
-                writeDiffs: true,
-                diffsOutputFolder,
-            }),
-        ).rejects.toThrow(ComparePdfConfigurationError);
-    } finally {
-        // Restore mode so cleanup in subsequent runs can remove the directory.
-        rmSync(diffsOutputFolder, { recursive: true, force: true });
-    }
-});
+            await expect(
+                comparePdfDetailed('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
+                    writeDiffs: true,
+                    diffsOutputFolder,
+                }),
+            ).rejects.toThrow(ComparePdfConfigurationError);
+        } finally {
+            // Restore mode so cleanup in subsequent runs can remove the directory.
+            rmSync(diffsOutputFolder, { recursive: true, force: true });
+        }
+    },
+);
