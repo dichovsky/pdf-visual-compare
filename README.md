@@ -270,6 +270,9 @@ still validated even when `writeDiffs` is `false`.
 - `ComparePdfConfigurationError: Page Number must be a finite positive integer.` — when `excludedAreas[].pageNumber` is `<= 0`, fractional, `NaN`, or infinite.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions must be an object.` — when an untyped caller passes a non-object render configuration.
 - `ComparePdfConfigurationError: Unsupported pdfToPngConvertOptions properties: ...` — when an untyped caller passes render settings that would skip page content or enable parallel rendering.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must be a non-empty string.` — when an untyped caller passes a non-string or blank render output path.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a directory when it already exists: <path>` — when the configured render output path already exists as a file.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output path itself or an existing ancestor is a symbolic link (sandbox parity with `diffsOutputFolder`).
 - `ComparePdfRenderingError: Failed to render actual PDF pages.` / `Failed to render expected PDF pages.` — when the PDF renderer dependency fails. The original dependency exception is attached as `cause`.
 - `ComparePdfRenderingError: Rendered page content is missing for page: <page-name>.` — when the renderer returns a page without binary PNG content.
 - `ComparePdfComparisonError: Failed to compare rendered PDF page <page-number>.` — when the PNG comparator dependency fails. The original dependency exception is attached as `cause`.
@@ -293,26 +296,26 @@ For untrusted environments, prefer binary inputs or set `ComparePdfOptions.allow
 
 ### `ComparePdfOptions`
 
-| Property                 | Type               | Default              | Description                                                                                 |
-| ------------------------ | ------------------ | -------------------- | ------------------------------------------------------------------------------------------- |
-| `writeDiffs`             | `boolean`          | `false`              | Enables diff PNG output on disk                                                             |
-| `diffsOutputFolder`      | `string`           | `./comparePdfOutput` | Trusted diff-output root; validated when provided, and used for written diff PNGs only when `writeDiffs` is `true` |
-| `allowedInputRoot`       | `string`           | `undefined`          | Optional root directory that constrains string PDF inputs; when omitted, string paths are trusted caller-controlled inputs |
-| `compareThreshold`       | `number`           | `0`                  | Maximum number of differing pixels allowed before comparison fails; must be a finite non-negative integer |
+| Property                 | Type               | Default              | Description                                                                                                                                       |
+| ------------------------ | ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `writeDiffs`             | `boolean`          | `false`              | Enables diff PNG output on disk                                                                                                                   |
+| `diffsOutputFolder`      | `string`           | `./comparePdfOutput` | Trusted diff-output root; validated when provided, and used for written diff PNGs only when `writeDiffs` is `true`                                |
+| `allowedInputRoot`       | `string`           | `undefined`          | Optional root directory that constrains string PDF inputs; when omitted, string paths are trusted caller-controlled inputs                        |
+| `compareThreshold`       | `number`           | `0`                  | Maximum number of differing pixels allowed before comparison fails; must be a finite non-negative integer                                         |
 | `excludedAreas`          | `PageExclusion[]`  | `[]`                 | Per-page exclusion zones matched by rendered `pageNumber` (1-based); non-rendered pages are ignored and the first duplicate entry for a page wins |
-| `pdfToPngConvertOptions` | `PdfRenderOptions` | see below            | Options for rendering PDF pages before comparison                                           |
+| `pdfToPngConvertOptions` | `PdfRenderOptions` | see below            | Options for rendering PDF pages before comparison                                                                                                 |
 
 ### `ComparePdfDetailedResult`
 
-| Property            | Type                     | Description                                                  |
-| ------------------- | ------------------------ | ------------------------------------------------------------ |
+| Property            | Type                     | Description                                                   |
+| ------------------- | ------------------------ | ------------------------------------------------------------- |
 | `isEqual`           | `boolean`                | `true` when every planned page comparison is within threshold |
-| `actualPageCount`   | `number`                 | Number of rendered pages produced from the actual PDF        |
-| `expectedPageCount` | `number`                 | Number of rendered pages produced from the expected PDF      |
-| `compareThreshold`  | `number`                 | Document-level threshold supplied to the comparison          |
-| `writeDiffs`        | `boolean`                | `true` when diff PNG writing was enabled for the comparison  |
-| `diffsOutputFolder` | `string \| null`         | Resolved base diff output folder, or `null` when disabled    |
-| `pages`             | `ComparePdfPageResult[]` | Page-level outcomes sorted by `pageNumber`                  |
+| `actualPageCount`   | `number`                 | Number of rendered pages produced from the actual PDF         |
+| `expectedPageCount` | `number`                 | Number of rendered pages produced from the expected PDF       |
+| `compareThreshold`  | `number`                 | Document-level threshold supplied to the comparison           |
+| `writeDiffs`        | `boolean`                | `true` when diff PNG writing was enabled for the comparison   |
+| `diffsOutputFolder` | `string \| null`         | Resolved base diff output folder, or `null` when disabled     |
+| `pages`             | `ComparePdfPageResult[]` | Page-level outcomes sorted by `pageNumber`                    |
 
 ### `ComparePdfPageResult`
 
@@ -338,17 +341,17 @@ type ComparePdfPageStatus = 'matched' | 'mismatched' | 'missing-actual' | 'missi
 `PdfRenderOptions` is this library's stable rendering contract. It is adapted internally to the
 current PDF renderer and is not a direct re-export of an upstream dependency type.
 
-| Property             | Type                             | Description                                  |
-| -------------------- | -------------------------------- | -------------------------------------------- |
-| `viewportScale`      | `number`                         | Scale factor applied before rendering        |
-| `disableFontFace`    | `boolean`                        | Use built-in fonts instead of embedded fonts |
-| `useSystemFonts`     | `boolean`                        | Allow system font fallbacks                  |
-| `enableXfa`          | `boolean`                        | Render XFA form data                         |
-| `pdfFilePassword`    | `string`                         | Password for encrypted PDFs                  |
-| `outputFolder`       | `string`                         | Folder for intermediate PNG files; this library writes under `actual/` and `expected/` subfolders to avoid collisions |
-| `outputFileMaskFunc` | `(pageNumber: number) => string` | Custom PNG filename generator                |
-| `pagesToProcess`     | `number[]`                       | 1-based pages to render                      |
-| `verbosityLevel`     | `number`                         | Renderer verbosity level                     |
+| Property             | Type                             | Description                                                                                                                                                                                 |
+| -------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `viewportScale`      | `number`                         | Scale factor applied before rendering                                                                                                                                                       |
+| `disableFontFace`    | `boolean`                        | Use built-in fonts instead of embedded fonts                                                                                                                                                |
+| `useSystemFonts`     | `boolean`                        | Allow system font fallbacks                                                                                                                                                                 |
+| `enableXfa`          | `boolean`                        | Render XFA form data                                                                                                                                                                        |
+| `pdfFilePassword`    | `string`                         | Password for encrypted PDFs                                                                                                                                                                 |
+| `outputFolder`       | `string`                         | Folder for intermediate PNG files; validated as a non-empty path that does not traverse a symbolic link. This library writes under `actual/` and `expected/` subfolders to avoid collisions |
+| `outputFileMaskFunc` | `(pageNumber: number) => string` | Custom PNG filename generator                                                                                                                                                               |
+| `pagesToProcess`     | `number[]`                       | 1-based pages to render                                                                                                                                                                     |
+| `verbosityLevel`     | `number`                         | Renderer verbosity level                                                                                                                                                                    |
 
 `comparePdf()` always renders page content and always calls the renderer sequentially. The following
 upstream renderer flags are intentionally excluded from `PdfRenderOptions` and are rejected at runtime
@@ -360,15 +363,21 @@ and `concurrencyLimit`.
 library writes the two compared PDFs into `actual/` and `expected/` subfolders beneath that root so
 custom filename masks do not collide.
 
+The render output path is validated with the same sandbox-parity contract applied to
+`diffsOutputFolder`: it must be a non-empty string, must resolve to a directory when the path
+already exists, and may not traverse a symbolic link at the leaf or at any existing ancestor.
+These checks close a CWE-59 / CWE-61 symlink-swap class where a pre-planted link could redirect
+the renderer's intermediate PNG writes to a location outside the configured workspace.
+
 ### `PageExclusion`
 
-| Property            | Type         | Description                                                                                                      |
-| ------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `pageNumber`        | `number`     | 1-based page number this exclusion applies to (`1` = first page, `2` = second page, etc.); must be a finite positive integer |
-| `excludedAreas`     | `PageArea[]` | Rectangles to exclude from comparison                                                                            |
+| Property            | Type         | Description                                                                                                                                 |
+| ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pageNumber`        | `number`     | 1-based page number this exclusion applies to (`1` = first page, `2` = second page, etc.); must be a finite positive integer                |
+| `excludedAreas`     | `PageArea[]` | Rectangles to exclude from comparison                                                                                                       |
 | `excludedAreaColor` | `RgbColor`   | Fill colour applied to `excludedAreas` before comparison. When omitted, `png-visual-compare` uses its default blue `{ r: 0, g: 0, b: 255 }` |
-| `diffFilePath`      | `string`     | Override the diff image output path for this page; the resolved path must stay inside `diffsOutputFolder`       |
-| `matchingThreshold` | `number`     | Per-page pixel threshold, overrides the document-level `compareThreshold` for this page; must be a finite non-negative integer |
+| `diffFilePath`      | `string`     | Override the diff image output path for this page; the resolved path must stay inside `diffsOutputFolder`                                   |
+| `matchingThreshold` | `number`     | Per-page pixel threshold, overrides the document-level `compareThreshold` for this page; must be a finite non-negative integer              |
 
 `ExcludedPageArea` remains exported as a backwards-compatible alias of `PageExclusion`.
 

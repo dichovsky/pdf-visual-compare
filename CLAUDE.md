@@ -23,6 +23,7 @@ Tests have a 90-second timeout (`vitest.config.mjs`) because PDF-to-PNG conversi
 This is a small TypeScript library published to npm. Source lives in `src/`, compiled output goes to `out/` (the published artifact).
 
 **Data flow:** `comparePdf(actualPdf, expectedPdf, opts)` →
+
 1. Validates and normalizes inputs: `string`, `Buffer`, `ArrayBuffer`, or `SharedArrayBuffer`; string inputs can be constrained by `allowedInputRoot`
 2. Discovers rendered page numbers via `pdfToPng` metadata-only calls — **sequentially**, not in parallel (concurrent document renders corrupt the shared PDF.js worker state and can cause "Invalid page request" errors)
 3. Builds a page-number keyed comparison plan
@@ -31,21 +32,25 @@ This is a small TypeScript library published to npm. Source lives in `src/`, com
 6. Returns `false` if any page exceeds the applicable threshold or if one side is missing a planned page
 
 **Key constraints:**
+
 - `pdfToPng` document renders must remain sequential. `Promise.all` causes "Invalid page request" errors when PDFs have different page counts due to shared PDF.js worker state.
 - Page rendering is intentionally bounded-memory: plan first, then render/compare per page instead of holding both full documents in memory.
 - Page comparison is still sequential even after upgrading to `png-visual-compare` 6.x. That dependency now exposes async/ported comparison entry points, but this library should not parallelize page comparison without a benchmark and safety review.
+- All caller-supplied filesystem roots (`allowedInputRoot`, `diffsOutputFolder`, `pdfToPngConvertOptions.outputFolder`) share a single sandbox-parity contract: non-empty string, must resolve to a directory when it already exists, and may not traverse a symbolic link at the leaf or any existing ancestor. The shared symlink-rejection + path-containment primitives live in `src/internal/securePath.ts` — keep CWE-59 / CWE-61 fixes consolidated there.
 
 **`excludedAreas` matching:** entries in `ComparePdfOptions.excludedAreas` are matched to pages by their `pageNumber` field (1-based, not array index). An entry with `pageNumber: 1` applies to the first page regardless of its position in the array.
 
 **`ComparePngOptions` surface:** `comparePdf` forwards `excludedAreas`, `excludedAreaColor`, `diffFilePath`, and `throwErrorOnInvalidInputData` to `png-visual-compare`. The `ExcludedPageArea.matchingThreshold` field is still applied inside `comparePdf` as a per-page threshold override rather than being forwarded downstream.
 
 **Public API** (exported from `src/index.ts`):
+
 - `comparePdf(actualPdf: PdfInput, expectedPdf: PdfInput, opts?: ComparePdfOptions): Promise<boolean>`
 - `ComparePdfOptions` type
 - `PdfInput` type
 - `ExcludedPageArea` type
 
 **Dependencies:**
+
 - `pdf-to-png-converter` — renders PDF pages to PNG buffers using PDF.js plus prebuilt `@napi-rs/canvas` binaries (Node `>=24`)
 - `png-visual-compare` — pixel-level PNG comparison with exclusion zone support
 
