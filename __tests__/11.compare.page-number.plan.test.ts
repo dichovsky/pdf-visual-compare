@@ -18,6 +18,23 @@ vi.mock('png-visual-compare', () => ({
 
 import { ComparePdfConfigurationError, comparePdf } from '../src';
 
+function escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Builds a matcher for the secure tempfile path that the diff-output guards now hand to
+ * the comparator. The published `diffFilePath` is the rename target, not the comparator's
+ * write target — the comparator sees a randomly-suffixed tempfile in the same directory.
+ */
+function expectStagedTempfileFor(publishedDiffFilePath: string): ReturnType<typeof expect.stringMatching> {
+    const parentDir = resolve(publishedDiffFilePath, '..');
+    const leafName = publishedDiffFilePath.slice(parentDir.length + 1);
+    return expect.stringMatching(
+        new RegExp(`^${escapeRegex(parentDir)}/\\.${escapeRegex(leafName)}\\.[0-9a-f]{32}\\.tmp$`),
+    );
+}
+
 beforeEach(() => {
     comparePngMock.mockReset();
     pdfToPngMock.mockReset();
@@ -58,7 +75,11 @@ test(`should apply exclusions and thresholds by pageNumber when rendering select
         expect.objectContaining({
             excludedAreas: [{ x1: 1, y1: 2, x2: 3, y2: 4 }],
             excludedAreaColor: { r: 255, g: 255, b: 255 },
-            diffFilePath: resolve(`./test-results/compare/11-1`, 'diff_actual-selected-page.png'),
+            // Comparator receives the staged tempfile path, not the published final path —
+            // the diff is renamed into place atomically after the comparator returns.
+            diffFilePath: expectStagedTempfileFor(
+                resolve(`./test-results/compare/11-1`, 'diff_actual-selected-page.png'),
+            ),
             throwErrorOnInvalidInputData: true,
         }),
     );
@@ -106,7 +127,7 @@ test(`should use the first matching exclusion deterministically for selected sub
         expectedPageContent,
         expect.objectContaining({
             excludedAreas: [{ x1: 1, y1: 2, x2: 3, y2: 4 }],
-            diffFilePath: firstDiffFilePath,
+            diffFilePath: expectStagedTempfileFor(firstDiffFilePath),
             throwErrorOnInvalidInputData: true,
         }),
     );
@@ -118,7 +139,9 @@ test(`should pair rendered pages by pageNumber instead of rendered file name`, a
 
     pdfToPngMock
         .mockResolvedValueOnce([{ name: 'custom-actual-mask.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'totally-different-expected-mask.png', pageNumber: 1, content: expectedPageContent }]);
+        .mockResolvedValueOnce([
+            { name: 'totally-different-expected-mask.png', pageNumber: 1, content: expectedPageContent },
+        ]);
     comparePngMock.mockReturnValueOnce(0);
 
     await expect(
@@ -136,7 +159,9 @@ test(`should pair rendered pages by pageNumber instead of rendered file name`, a
         actualPageContent,
         expectedPageContent,
         expect.objectContaining({
-            diffFilePath: resolve(`./test-results/compare/11-2`, 'diff_custom-actual-mask.png'),
+            diffFilePath: expectStagedTempfileFor(
+                resolve(`./test-results/compare/11-2`, 'diff_custom-actual-mask.png'),
+            ),
         }),
     );
 });
@@ -173,7 +198,7 @@ test(`should allow per-page diffFilePath overrides inside diffsOutputFolder`, as
     expect(comparePngMock).toHaveBeenCalledWith(
         actualPageContent,
         expectedPageContent,
-        expect.objectContaining({ diffFilePath }),
+        expect.objectContaining({ diffFilePath: expectStagedTempfileFor(diffFilePath) }),
     );
 });
 
