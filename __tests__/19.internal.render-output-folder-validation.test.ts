@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { lstatSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { beforeEach, expect, test } from 'vitest';
 import { ComparePdfConfigurationError } from '../src/errors/ComparePdfConfigurationError.js';
@@ -106,7 +106,7 @@ test('should reject outputFolder when an existing ancestor is a symbolic link', 
     ).toThrow(/pdfToPngConvertOptions.outputFolder must not traverse a symbolic link/);
 });
 
-test('should accept a valid existing directory and resolve it to an absolute path', () => {
+test('should accept a valid existing directory and pre-create actual/expected namespace subdirs', () => {
     const baseDir = ensureCleanRoot('valid-existing');
 
     const normalized = normalizeComparisonOptions({
@@ -114,17 +114,24 @@ test('should accept a valid existing directory and resolve it to an absolute pat
     });
 
     expect(normalized.pdfToPngConvertOpts.outputFolder).toBe(resolve(baseDir));
+    expect(lstatSync(resolve(baseDir, 'actual')).isDirectory()).toBe(true);
+    expect(lstatSync(resolve(baseDir, 'expected')).isDirectory()).toBe(true);
 });
 
-test('should accept a non-existent path under an existing real parent so the renderer can create it', () => {
+test('should create the leaf directory when it does not exist so the renderer cannot lose a TOCTOU race', () => {
     const baseDir = ensureCleanRoot('valid-non-existent');
-    const toBeCreated = resolve(baseDir, 'will-be-created-by-renderer');
+    const toBeCreated = resolve(baseDir, 'will-be-created-by-library');
 
     const normalized = normalizeComparisonOptions({
         pdfToPngConvertOptions: { outputFolder: toBeCreated },
     });
 
     expect(normalized.pdfToPngConvertOpts.outputFolder).toBe(resolve(toBeCreated));
+    // Library now owns leaf creation — the leaf and both namespace subdirs must be real
+    // directories on disk before any subsequent renderer write can target them.
+    expect(lstatSync(toBeCreated).isDirectory()).toBe(true);
+    expect(lstatSync(resolve(toBeCreated, 'actual')).isDirectory()).toBe(true);
+    expect(lstatSync(resolve(toBeCreated, 'expected')).isDirectory()).toBe(true);
 });
 
 test('should accept a relative outputFolder and resolve it to absolute', () => {
@@ -136,4 +143,61 @@ test('should accept a relative outputFolder and resolve it to absolute', () => {
     });
 
     expect(normalized.pdfToPngConvertOpts.outputFolder).toBe(resolve(cwdRelative));
+});
+
+test('should reject a pre-planted symbolic link at the actual/ namespace subdir', () => {
+    const baseDir = ensureCleanRoot('actual-namespace-symlink');
+    const escapeTarget = resolve(baseDir, 'attacker-target');
+    mkdirSync(escapeTarget);
+    const plantedActual = resolve(baseDir, 'actual');
+    symlinkSync(escapeTarget, plantedActual);
+
+    expect(() =>
+        normalizeComparisonOptions({
+            pdfToPngConvertOptions: { outputFolder: baseDir },
+        }),
+    ).toThrow(ComparePdfConfigurationError);
+    expect(() =>
+        normalizeComparisonOptions({
+            pdfToPngConvertOptions: { outputFolder: baseDir },
+        }),
+    ).toThrow(/pdfToPngConvertOptions.outputFolder must not traverse a symbolic link/);
+});
+
+test('should reject a pre-planted symbolic link at the expected/ namespace subdir', () => {
+    const baseDir = ensureCleanRoot('expected-namespace-symlink');
+    const escapeTarget = resolve(baseDir, 'attacker-target');
+    mkdirSync(escapeTarget);
+    const plantedExpected = resolve(baseDir, 'expected');
+    symlinkSync(escapeTarget, plantedExpected);
+
+    expect(() =>
+        normalizeComparisonOptions({
+            pdfToPngConvertOptions: { outputFolder: baseDir },
+        }),
+    ).toThrow(ComparePdfConfigurationError);
+    expect(() =>
+        normalizeComparisonOptions({
+            pdfToPngConvertOptions: { outputFolder: baseDir },
+        }),
+    ).toThrow(/pdfToPngConvertOptions.outputFolder must not traverse a symbolic link/);
+});
+
+test('should surface a configuration error when the leaf cannot be created (mkdir failure)', () => {
+    const baseDir = ensureCleanRoot('mkdir-failure');
+    const blockingFile = resolve(baseDir, 'blocking-file');
+    writeFileSync(blockingFile, 'occupies the leaf path');
+    // Asking for a directory under a regular file forces mkdirSync to fail with ENOTDIR.
+    const outputFolder = resolve(blockingFile, 'render-output');
+
+    expect(() =>
+        normalizeComparisonOptions({
+            pdfToPngConvertOptions: { outputFolder },
+        }),
+    ).toThrow(ComparePdfConfigurationError);
+    expect(() =>
+        normalizeComparisonOptions({
+            pdfToPngConvertOptions: { outputFolder },
+        }),
+    ).toThrow(/pdfToPngConvertOptions.outputFolder must point to a writable directory/);
 });

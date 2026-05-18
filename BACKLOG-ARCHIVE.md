@@ -11,8 +11,8 @@
     - **Impl:** Stage diff write to a tempfile inside the validated parent and atomically rename into place; pre-create leaf with `O_CREAT|O_EXCL|O_NOFOLLOW` (PR #48).
     - **Rat:** Symlink walker skipped the non-existent leaf, letting attackers plant a symlink between validation and `comparePng` write to clobber arbitrary files.
 - [x] 🔴 🐛 SEC: Unvalidated `pdfToPngConvertOptions.outputFolder` → arbitrary write (sandbox parity gap vs `allowedInputRoot`/`diffsOutputFolder`)
-    - **Impl:** New `validateRenderOutputFolder` mirrors the `diffsOutputFolder` contract — non-empty string, dir-if-exists, no symlinks on the leaf or any existing ancestor — invoked from `normalizeComparisonOptions` so the resolved path replaces the caller-supplied value before reaching `pdfToPng`.
-    - **Rat:** Without this guard, an attacker who can plant a symlink under the configured `outputFolder` (or any of its ancestors) could redirect the renderer's intermediate PNG writes outside the intended workspace (CWE-59 / CWE-61).
+    - **Impl:** New `validateRenderOutputFolder` mirrors the `diffsOutputFolder` contract — non-empty string, dir-if-exists, no symlinks on the leaf or any existing ancestor — and additionally takes library ownership of leaf-directory creation: the resolved folder plus the `actual/`/`expected/` namespace subdirectories are pre-created and re-asserted via `lstat` to be real directories. Invoked from `normalizeComparisonOptions` so the resolved path replaces the caller-supplied value before reaching `pdfToPng`.
+    - **Rat:** Without this guard, an attacker who can plant a symlink under the configured `outputFolder` (or any of its ancestors) could redirect the renderer's intermediate PNG writes outside the intended workspace (CWE-59 / CWE-61). The post-mkdir `lstat` re-assertion closes the residual validate→render TOCTOU window (CWE-367) that the path walker alone cannot cover when the leaf is non-existent at validation time — an attacker could otherwise plant a symbolic link at the leaf after validation but before the renderer's first write.
 
 ## 🏛️ Architecture (Deepening)
 

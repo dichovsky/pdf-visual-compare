@@ -272,7 +272,8 @@ still validated even when `writeDiffs` is `false`.
 - `ComparePdfConfigurationError: Unsupported pdfToPngConvertOptions properties: ...` — when an untyped caller passes render settings that would skip page content or enable parallel rendering.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must be a non-empty string.` — when an untyped caller passes a non-string or blank render output path.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a directory when it already exists: <path>` — when the configured render output path already exists as a file.
-- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output path itself or an existing ancestor is a symbolic link (sandbox parity with `diffsOutputFolder`).
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output path itself or an existing ancestor is a symbolic link, or when the post-mkdir leaf check finds a symbolic link at the resolved folder or at the pre-created `actual/` / `expected/` namespace subdirectory (sandbox parity with `diffsOutputFolder`).
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a writable directory: <path>` — when the library cannot create the resolved render output folder or its `actual/` / `expected/` namespace subdirectories (for example, a regular file blocks the leaf path).
 - `ComparePdfRenderingError: Failed to render actual PDF pages.` / `Failed to render expected PDF pages.` — when the PDF renderer dependency fails. The original dependency exception is attached as `cause`.
 - `ComparePdfRenderingError: Rendered page content is missing for page: <page-name>.` — when the renderer returns a page without binary PNG content.
 - `ComparePdfComparisonError: Failed to compare rendered PDF page <page-number>.` — when the PNG comparator dependency fails. The original dependency exception is attached as `cause`.
@@ -366,8 +367,12 @@ custom filename masks do not collide.
 The render output path is validated with the same sandbox-parity contract applied to
 `diffsOutputFolder`: it must be a non-empty string, must resolve to a directory when the path
 already exists, and may not traverse a symbolic link at the leaf or at any existing ancestor.
-These checks close a CWE-59 / CWE-61 symlink-swap class where a pre-planted link could redirect
-the renderer's intermediate PNG writes to a location outside the configured workspace.
+On top of the path-walker check, this library takes ownership of leaf creation: the resolved
+path and both the `actual/` and `expected/` namespace subdirectories are pre-created and then
+re-asserted to be real (non-symlink) directories before any render call runs. That closes the
+residual validate→render TOCTOU window the path walker cannot cover on its own, so an attacker
+cannot replace a future write destination with a symbolic link between validation and the
+renderer's first write (CWE-59 / CWE-61 / CWE-367).
 
 ### `PageExclusion`
 
