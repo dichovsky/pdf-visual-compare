@@ -1,7 +1,8 @@
 import { closeSync, constants, existsSync, fstatSync, openSync, readFileSync, realpathSync, statSync } from 'node:fs';
-import { isAbsolute, relative, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { ComparePdfConfigurationError } from '../errors/ComparePdfConfigurationError.js';
 import { ComparePdfInputError } from '../errors/ComparePdfInputError.js';
+import { isPathWithinRoot } from './securePath.js';
 import type { ComparePdfOptions } from '../types/ComparePdfOptions.js';
 import type { PdfInput } from '../types/PdfInput.js';
 import type { AllowedInputRoot } from './types.js';
@@ -147,9 +148,4 @@ function assertStringPathWithinAllowedInputRoot(
             `${inputLabel} must resolve within allowedInputRoot: ${allowedInputRoot.displayPath}`,
         );
     }
-}
-
-function isPathWithinRoot(pathToCheck: string, rootPath: string): boolean {
-    const relativePath = relative(rootPath, pathToCheck);
-    return relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath));
 }
