@@ -63,7 +63,7 @@
   },
   "dependencies": {
     "pdf-to-png-converter": "~4.0.0",
-    "png-visual-compare": "~6.0.0"
+    "png-visual-compare": "~6.1.0"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
