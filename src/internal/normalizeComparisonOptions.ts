@@ -2,6 +2,7 @@ import { toComparePngOptions } from './adapters/comparePngOptions.js';
 import { toPdfToPngOptions } from './adapters/pdfRenderOptions.js';
 import { validateDiffsOutputFolder } from './diffOutputGuards.js';
 import { validateAllowedInputRoot } from './normalizePdfInput.js';
+import { validateRenderOutputFolder } from './renderOutputFolderGuards.js';
 import { ComparePdfConfigurationError } from '../errors/ComparePdfConfigurationError.js';
 import type { ComparePdfOptions } from '../types/ComparePdfOptions.js';
 import type { PageExclusion } from '../types/PageExclusion.js';
@@ -27,6 +28,7 @@ export function normalizeComparisonOptions(opts: unknown): NormalizedComparePdfO
     if (!pdfToPngConvertOpts.outputFileMaskFunc) {
         pdfToPngConvertOpts.outputFileMaskFunc = (pageNumber: number) => `comparePdf_${pageNumber}.png`;
     }
+    pdfToPngConvertOpts.outputFolder = validateRenderOutputFolder(pdfToPngConvertOpts.outputFolder);
 
     const writeDiffs = compareOptions.writeDiffs ?? false;
     const diffsOutputFolder = validateDiffsOutputFolder(compareOptions.diffsOutputFolder);

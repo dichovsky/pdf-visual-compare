@@ -14,6 +14,12 @@ import { randomBytes } from 'node:crypto';
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { ComparePdfConfigurationError } from '../errors/ComparePdfConfigurationError.js';
 import { getDefaultDiffsFolder } from '../const.js';
+import {
+    assertPathAndAncestorsAreNotSymbolicLinks,
+    assertPathIsNotSymbolicLink,
+    isPathWithinRoot,
+    pathExistsWithoutFollowingSymlinks,
+} from './securePath.js';
 import type { ComparePdfOptions } from '../types/ComparePdfOptions.js';
 
 export function validateDiffsOutputFolder(diffsOutputFolder: ComparePdfOptions['diffsOutputFolder']): string {
@@ -30,7 +36,10 @@ export function validateDiffsOutputFolder(diffsOutputFolder: ComparePdfOptions['
         );
     }
 
-    assertPathAndExistingAncestorsAreNotSymbolicLinks(resolvedOutputFolder, outputFolder);
+    assertPathAndAncestorsAreNotSymbolicLinks(
+        resolvedOutputFolder,
+        `Diff output path must stay within diffsOutputFolder: ${resolve(outputFolder)}`,
+    );
 
     return resolvedOutputFolder;
 }
@@ -48,9 +57,10 @@ export function ensureDiffOutputDirectory(outputPath: string, diffsOutputFolder:
 
 export function assertDiffOutputPathUsesRealFilesystemEntries(diffFilePath: string, diffsOutputFolder: string): void {
     const resolvedDiffsOutputFolder = resolve(diffsOutputFolder);
+    const diffsOutputFolderErrorMessage = `Diff output path must stay within diffsOutputFolder: ${resolve(diffsOutputFolder)}`;
 
     if (pathExistsWithoutFollowingSymlinks(resolvedDiffsOutputFolder)) {
-        assertPathIsNotSymbolicLink(resolvedDiffsOutputFolder, diffsOutputFolder);
+        assertPathIsNotSymbolicLink(resolvedDiffsOutputFolder, diffsOutputFolderErrorMessage);
     }
 
     const relativeDiffPath = relative(resolvedDiffsOutputFolder, resolve(diffFilePath));
@@ -66,7 +76,7 @@ export function assertDiffOutputPathUsesRealFilesystemEntries(diffFilePath: stri
             return;
         }
 
-        assertPathIsNotSymbolicLink(currentPath, diffsOutputFolder);
+        assertPathIsNotSymbolicLink(currentPath, diffsOutputFolderErrorMessage);
     }
 }
 
@@ -237,50 +247,4 @@ export function assertCanonicalDiffOutputPath(diffFilePath: string, diffsOutputF
             `Diff output path must stay within diffsOutputFolder: ${resolve(diffsOutputFolder)}`,
         );
     }
-}
-
-function assertPathAndExistingAncestorsAreNotSymbolicLinks(pathToCheck: string, diffsOutputFolder: string): void {
-    const existingAncestorPaths: string[] = [];
-    let currentPath = resolve(pathToCheck);
-
-    while (true) {
-        if (pathExistsWithoutFollowingSymlinks(currentPath)) {
-            existingAncestorPaths.push(currentPath);
-        }
-
-        const parentPath = dirname(currentPath);
-        if (parentPath === currentPath) {
-            break;
-        }
-
-        currentPath = parentPath;
-    }
-
-    for (const existingPath of existingAncestorPaths.reverse()) {
-        assertPathIsNotSymbolicLink(existingPath, diffsOutputFolder);
-    }
-}
-
-function assertPathIsNotSymbolicLink(pathToCheck: string, diffsOutputFolder: string): void {
-    if (!lstatSync(pathToCheck).isSymbolicLink()) {
-        return;
-    }
-
-    throw new ComparePdfConfigurationError(
-        `Diff output path must stay within diffsOutputFolder: ${resolve(diffsOutputFolder)}`,
-    );
-}
-
-function pathExistsWithoutFollowingSymlinks(pathToCheck: string): boolean {
-    try {
-        lstatSync(pathToCheck);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-function isPathWithinRoot(pathToCheck: string, rootPath: string): boolean {
-    const relativePath = relative(rootPath, pathToCheck);
-    return relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath));
 }
