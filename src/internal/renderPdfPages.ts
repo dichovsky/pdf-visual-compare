@@ -1,3 +1,4 @@
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { pdfToPng } from 'pdf-to-png-converter';
 import { ComparePdfRenderingError } from '../errors/ComparePdfRenderingError.js';
@@ -52,6 +53,8 @@ export async function renderPdfPage(
     pageNumber: number,
     sourceLabel: 'actual' | 'expected',
 ): Promise<RenderedPngPageOutput | undefined> {
+    clearStaleRenderTarget(pdfToPngConvertOpts, pageNumber, sourceLabel);
+
     const renderedPages = await renderPdfPages(
         pdfFile,
         {
@@ -62,6 +65,28 @@ export async function renderPdfPage(
     );
 
     return renderedPages[0];
+}
+
+/**
+ * Removes the exact PNG file this page render is about to (re)create when an
+ * `outputFolder` is configured. The renderer opens output files with exclusive-create
+ * (`'wx'`) and refuses to overwrite, so a prior run's PNG at the same name would otherwise
+ * make re-rendering fail with `EEXIST`. This performs the "clear the output name before
+ * re-running the same conversion" step the renderer documents for callers, scoped to the
+ * single file the library owns and is regenerating (`force: true` ignores a missing file
+ * and removes a leaf symlink without following it, rather than honoring its target).
+ */
+function clearStaleRenderTarget(
+    pdfToPngConvertOpts: PdfToPngOptions,
+    pageNumber: number,
+    sourceLabel: 'actual' | 'expected',
+): void {
+    const { outputFolder, outputFileMaskFunc } = pdfToPngConvertOpts;
+    if (!outputFolder || !outputFileMaskFunc) {
+        return;
+    }
+
+    rmSync(join(outputFolder, sourceLabel, outputFileMaskFunc(pageNumber)), { force: true });
 }
 
 function toRenderablePdfInput(pdfFile: PdfInput): string | Buffer | ArrayBuffer {
