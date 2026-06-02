@@ -1,7 +1,9 @@
 import { rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { pdfToPng } from 'pdf-to-png-converter';
+import { ComparePdfConfigurationError } from '../errors/ComparePdfConfigurationError.js';
 import { ComparePdfRenderingError } from '../errors/ComparePdfRenderingError.js';
+import { isPathWithinRoot } from './securePath.js';
 import type { PdfInput } from '../types/PdfInput.js';
 import type { RenderedPngPageOutput } from './types.js';
 import type { PdfToPngOptions, PngPageOutput } from 'pdf-to-png-converter';
@@ -73,8 +75,15 @@ export async function renderPdfPage(
  * (`'wx'`) and refuses to overwrite, so a prior run's PNG at the same name would otherwise
  * make re-rendering fail with `EEXIST`. This performs the "clear the output name before
  * re-running the same conversion" step the renderer documents for callers, scoped to the
- * single file the library owns and is regenerating (`force: true` ignores a missing file
- * and removes a leaf symlink without following it, rather than honoring its target).
+ * single file the library owns and is regenerating.
+ *
+ * The removal is constrained to the library-owned render namespace: the resolved target must
+ * stay inside `<outputFolder>/<sourceLabel>`. A mask that escapes that directory is left
+ * untouched, so the renderer's own containment check (`savePNGfile`) remains the single
+ * source of truth for rejecting it. `force: true` ignores a missing file and unlinks a leaf
+ * symlink without following it. Any other filesystem failure (for example a non-writable
+ * folder, or a directory occupying the target name) is surfaced as the library's typed
+ * `ComparePdfConfigurationError` rather than leaking a raw `ErrnoException`.
  */
 function clearStaleRenderTarget(
     pdfToPngConvertOpts: PdfToPngOptions,
@@ -86,7 +95,20 @@ function clearStaleRenderTarget(
         return;
     }
 
-    rmSync(join(outputFolder, sourceLabel, outputFileMaskFunc(pageNumber)), { force: true });
+    const renderNamespace = resolve(outputFolder, sourceLabel);
+    const targetPath = resolve(renderNamespace, outputFileMaskFunc(pageNumber));
+    if (!isPathWithinRoot(targetPath, renderNamespace)) {
+        return;
+    }
+
+    try {
+        rmSync(targetPath, { force: true });
+    } catch (cause) {
+        throw new ComparePdfConfigurationError(
+            `pdfToPngConvertOptions.outputFolder must point to a writable directory: ${outputFolder}`,
+            { cause },
+        );
+    }
 }
 
 function toRenderablePdfInput(pdfFile: PdfInput): string | Buffer | ArrayBuffer {
