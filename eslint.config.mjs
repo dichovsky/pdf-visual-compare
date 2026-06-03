@@ -1,8 +1,8 @@
-import tseslint from "typescript-eslint";
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
     {
-        ignores: ["coverage/", "out/", "node_modules/"],
+        ignores: ['coverage/', 'out/', 'node_modules/'],
     },
     ...tseslint.configs.recommended,
 );

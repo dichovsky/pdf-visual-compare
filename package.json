@@ -1,86 +1,87 @@
 {
-  "name": "pdf-visual-compare",
-  "version": "4.0.0",
-  "description": "Visual regression testing library for PDFs in Js/Ts without external system package dependencies.",
-  "keywords": [
-    "pdf",
-    "pdf regression",
-    "pdf test",
-    "pdf compare",
-    "compare pdf",
-    "pdf diff",
-    "visual regression",
-    "pdf testing",
-    "visual-diff"
-  ],
-  "homepage": "https://github.com/dichovsky/pdf-visual-compare#readme",
-  "bugs": {
-    "url": "https://github.com/dichovsky/pdf-visual-compare/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dichovsky/pdf-visual-compare.git"
-  },
-  "funding": {
-    "type": "buymeacoffee",
-    "url": "https://buymeacoffee.com/dichovsky"
-  },
-  "license": "MIT",
-  "author": "Igor Magdich <magdich.igor@gmail.com>",
-  "exports": {
-    ".": {
-      "require": "./out/index.js",
-      "types": "./out/index.d.ts",
-      "default": "./out/index.js"
-    }
-  },
-  "main": "./out/index.js",
-  "types": "./out/index.d.ts",
-  "files": [
-    "./out"
-  ],
-  "scripts": {
-    "prebuild": "npm run clean",
-    "build": "tsc --pretty -p ./tsconfig.prod.json",
-    "clean": "rimraf ./out ./coverage ./test-results ./comparePdfOutput",
-    "codemap": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/generate-codemap.ts",
-    "codemap:check": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/generate-codemap.ts --check",
-    "docker:build": "docker build --compress -t test-pdf-visual-compare .",
-    "predocker:run": "npm run clean && mkdir -p ./test-results && chmod 777 ./test-results",
-    "docker:run": "docker run --rm -it -v \"$PWD/test-results:/usr/pkg/test-results\" test-pdf-visual-compare",
-    "docker:test": "vitest run",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "lint": "eslint .",
-    "lint:fix": "npm run lint -- --fix",
-    "prepublishOnly": "npm test",
-    "pretest": "npm run clean && npm run lint && npm run codemap:check && npm run test:license && npm run build && npm run test:types && npm run test:artifacts",
-    "test": "vitest run --coverage",
-    "test:artifacts": "node ./__tests__/published-artifacts/verify-built-package.mjs",
-    "test:docker": "npm run docker:build && npm run docker:run",
-    "test:license": "npx --yes license-checker --production --onlyAllow \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\"",
-    "test:types": "tsc --pretty -p ./tsconfig.json"
-  },
-  "dependencies": {
-    "pdf-to-png-converter": "~4.0.0",
-    "png-visual-compare": "~6.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^25.9.1",
-    "@types/pngjs": "^6.0.5",
-    "@vitest/coverage-v8": "^4.1.5",
-    "eslint": "^10.3.0",
-    "jiti": "^2.7.0",
-    "rimraf": "^6.1.3",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3",
-    "vitest": "^4.1.6"
-  },
-  "engines": {
-    "node": ">=24"
-  },
-  "os": [
-    "darwin",
-    "linux"
-  ]
+    "name": "pdf-visual-compare",
+    "version": "4.0.0",
+    "description": "Visual regression testing library for PDFs in Js/Ts without external system package dependencies.",
+    "keywords": [
+        "pdf",
+        "pdf regression",
+        "pdf test",
+        "pdf compare",
+        "compare pdf",
+        "pdf diff",
+        "visual regression",
+        "pdf testing",
+        "visual-diff"
+    ],
+    "homepage": "https://github.com/dichovsky/pdf-visual-compare#readme",
+    "bugs": {
+        "url": "https://github.com/dichovsky/pdf-visual-compare/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dichovsky/pdf-visual-compare.git"
+    },
+    "funding": {
+        "type": "buymeacoffee",
+        "url": "https://buymeacoffee.com/dichovsky"
+    },
+    "license": "MIT",
+    "author": "Igor Magdich <magdich.igor@gmail.com>",
+    "exports": {
+        ".": {
+            "require": "./out/index.js",
+            "types": "./out/index.d.ts",
+            "default": "./out/index.js"
+        }
+    },
+    "main": "./out/index.js",
+    "types": "./out/index.d.ts",
+    "files": [
+        "./out"
+    ],
+    "scripts": {
+        "prebuild": "npm run clean",
+        "build": "tsc --pretty -p ./tsconfig.prod.json",
+        "clean": "rimraf ./out ./coverage ./test-results ./comparePdfOutput",
+        "codemap": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/generate-codemap.ts",
+        "codemap:check": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/generate-codemap.ts --check",
+        "docker:build": "docker build --compress -t test-pdf-visual-compare .",
+        "predocker:run": "npm run clean && mkdir -p ./test-results && chmod 777 ./test-results",
+        "docker:run": "docker run --rm -it -v \"$PWD/test-results:/usr/pkg/test-results\" test-pdf-visual-compare",
+        "docker:test": "vitest run",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "lint": "eslint .",
+        "lint:fix": "npm run lint -- --fix",
+        "prepublishOnly": "npm test",
+        "pretest": "npm run clean && npm run lint && npm run codemap:check && npm run test:license && npm run build && npm run test:types && npm run test:artifacts",
+        "test": "vitest run --coverage",
+        "test:artifacts": "node ./__tests__/published-artifacts/verify-built-package.mjs",
+        "test:docker": "npm run docker:build && npm run docker:run",
+        "test:license": "npx --yes license-checker --production \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\"",
+        "test:types": "tsc --pretty -p ./tsconfig.json"
+    },
+    "dependencies": {
+        "pdf-to-png-converter": "~4.1.0",
+        "png-visual-compare": "~6.1.0"
+    },
+    "devDependencies": {
+        "@types/node": "^25.9.1",
+        "@types/pngjs": "^6.0.5",
+        "@vitest/coverage-v8": "^4.1.8",
+        "eslint": "^10.4.1",
+        "jiti": "^2.7.0",
+        "prettier": "~3.8.3",
+        "rimraf": "^6.1.3",
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.60.1",
+        "vitest": "^4.1.8"
+    },
+    "engines": {
+        "node": ">=24"
+    },
+    "os": [
+        "darwin",
+        "linux"
+    ]
 }

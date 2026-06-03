@@ -8,13 +8,15 @@ export function buildPageComparisonPlan(
 ): PageComparisonPlanEntry[] {
     const actualPagesByNumber = indexPagesByNumber(actualPdfPngPages);
     const expectedPagesByNumber = indexPagesByNumber(expectedPdfPngPages);
-    return buildPageNumberComparisonPlan([...actualPagesByNumber.keys()], [...expectedPagesByNumber.keys()], excludedAreas).map(
-        (entry) => ({
-            ...entry,
-            actualPage: actualPagesByNumber.get(entry.pageNumber),
-            expectedPage: expectedPagesByNumber.get(entry.pageNumber),
-        }),
-    );
+    return buildPageNumberComparisonPlan(
+        [...actualPagesByNumber.keys()],
+        [...expectedPagesByNumber.keys()],
+        excludedAreas,
+    ).map((entry) => ({
+        ...entry,
+        actualPage: actualPagesByNumber.get(entry.pageNumber),
+        expectedPage: expectedPagesByNumber.get(entry.pageNumber),
+    }));
 }
 
 export function buildPageNumberComparisonPlan(

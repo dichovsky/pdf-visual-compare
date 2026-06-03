@@ -83,6 +83,7 @@ npm run test:docker
 ```
 
 Notes:
+
 - `npm run test:docker` is the single supported local entry point for the Docker test path.
 - `docker:run` mounts `./test-results` into the container.
 - `predocker:run` prepares that directory automatically.
@@ -122,6 +123,7 @@ This is especially important for typed errors, input/path-boundary rules, and ex
 GitHub Actions runs on pushes and pull requests.
 
 Current CI behavior:
+
 - `test.yml` runs on `ubuntu-24.04` and `macos-15`
 - CI installs dependencies with `npm ci`
 - CI runs `npm run lint`
@@ -148,6 +150,7 @@ protection required-check list together so the documented policy matches reposit
 Publishing is automated from `.github/workflows/publish.yml`.
 
 Current release flow:
+
 1. GitHub Release is published
 2. workflow runs `npm ci`
 3. workflow runs `npm run prepublishOnly` (which maps to `npm test`)
@@ -158,6 +161,7 @@ That means a release must pass the same validation pipeline used for normal deve
 ## Pull request guidance
 
 A good PR description should include:
+
 - what changed
 - why it changed
 - any API or behavior impact

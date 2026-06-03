@@ -6,7 +6,9 @@ import { comparePdf, comparePdfDetailed } from '../src/index.js';
 test(`should not write diff files unless writeDiffs is enabled`, async () => {
     const diffsOutputFolder = resolve('./test-results/compare/14-1');
 
-    await expect(comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', { diffsOutputFolder })).resolves.toBeFalsy();
+    await expect(
+        comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', { diffsOutputFolder }),
+    ).resolves.toBeFalsy();
     expect(existsSync(diffsOutputFolder)).toBeFalsy();
 });
 

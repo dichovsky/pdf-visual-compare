@@ -40,12 +40,7 @@ function getPixelColor(pngBuffer: Buffer, x: number, y: number): [number, number
     const png = PNG.sync.read(pngBuffer);
     const offset = (png.width * y + x) << 2;
 
-    return [
-        png.data[offset],
-        png.data[offset + 1],
-        png.data[offset + 2],
-        png.data[offset + 3],
-    ];
+    return [png.data[offset], png.data[offset + 1], png.data[offset + 2], png.data[offset + 3]];
 }
 
 test(`should change diff output when excludedAreaColor changes`, async () => {

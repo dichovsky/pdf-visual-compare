@@ -11,7 +11,10 @@ import {
 } from 'pdf-visual-compare';
 
 const bufferInput = Buffer.from('%PDF-consumer-typecheck');
-const arrayBufferInput = bufferInput.buffer.slice(bufferInput.byteOffset, bufferInput.byteOffset + bufferInput.byteLength);
+const arrayBufferInput = bufferInput.buffer.slice(
+    bufferInput.byteOffset,
+    bufferInput.byteOffset + bufferInput.byteLength,
+);
 
 const highlightColor: RgbColor = {
     r: 16,
@@ -44,7 +47,11 @@ const expectedPdf: PdfInput = arrayBufferInput;
 
 export async function verifyConsumerTypes(): Promise<void> {
     const isEqual: boolean = await comparePdf(actualPdf, expectedPdf, options);
-    const result: ComparePdfDetailedResult = await comparePdfDetailed('./test-data/pdf1.pdf', './test-data/pdf11.pdf', options);
+    const result: ComparePdfDetailedResult = await comparePdfDetailed(
+        './test-data/pdf1.pdf',
+        './test-data/pdf11.pdf',
+        options,
+    );
     const firstPageStatus: ComparePdfPageStatus | undefined = result.pages[0]?.status;
 
     void isEqual;
