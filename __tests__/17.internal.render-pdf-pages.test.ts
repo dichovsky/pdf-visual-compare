@@ -47,6 +47,34 @@ test(`should not clear a stale render target whose mask escapes the output names
     expect(existsSync(escapedFile)).toBeTruthy();
 });
 
+test(`should surface a typed configuration error when outputFileMaskFunc throws`, async () => {
+    const outputFolder = resolve(`./test-results/internal/17-throwing-mask/pages`);
+
+    rmSync(resolve(`./test-results/internal/17-throwing-mask`), { recursive: true, force: true });
+
+    pdfToPngMock.mockReset();
+
+    const maskFailure = new Error('mask boom');
+    const renderPromise = renderPdfPage(
+        Buffer.from('dummy'),
+        {
+            outputFolder,
+            outputFileMaskFunc: () => {
+                throw maskFailure;
+            },
+        },
+        1,
+        'actual',
+    );
+
+    await expect(renderPromise).rejects.toThrow(ComparePdfConfigurationError);
+    await expect(renderPromise).rejects.toThrow(
+        `pdfToPngConvertOptions.outputFileMaskFunc threw while resolving the output file name for page 1.`,
+    );
+    await expect(renderPromise).rejects.toMatchObject({ cause: maskFailure });
+    expect(pdfToPngMock).not.toHaveBeenCalled();
+});
+
 test(`should surface a typed configuration error when clearing the stale render target fails`, async () => {
     const outputFolder = resolve(`./test-results/internal/17-unwritable/pages`);
     const namespace = resolve(outputFolder, 'actual');

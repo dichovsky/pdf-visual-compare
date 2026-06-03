@@ -81,9 +81,10 @@ export async function renderPdfPage(
  * stay inside `<outputFolder>/<sourceLabel>`. A mask that escapes that directory is left
  * untouched, so the renderer's own containment check (`savePNGfile`) remains the single
  * source of truth for rejecting it. `force: true` ignores a missing file and unlinks a leaf
- * symlink without following it. Any other filesystem failure (for example a non-writable
- * folder, or a directory occupying the target name) is surfaced as the library's typed
- * `ComparePdfConfigurationError` rather than leaking a raw `ErrnoException`.
+ * symlink without following it. A caller-supplied `outputFileMaskFunc` that throws, and any
+ * other filesystem failure (for example a non-writable folder, or a directory occupying the
+ * target name), are surfaced as the library's typed `ComparePdfConfigurationError` rather than
+ * leaking a raw error out of the public surface.
  */
 function clearStaleRenderTarget(
     pdfToPngConvertOpts: PdfToPngOptions,
@@ -95,8 +96,18 @@ function clearStaleRenderTarget(
         return;
     }
 
+    let maskedFileName: string;
+    try {
+        maskedFileName = outputFileMaskFunc(pageNumber);
+    } catch (cause) {
+        throw new ComparePdfConfigurationError(
+            `pdfToPngConvertOptions.outputFileMaskFunc threw while resolving the output file name for page ${pageNumber}.`,
+            { cause },
+        );
+    }
+
     const renderNamespace = resolve(outputFolder, sourceLabel);
-    const targetPath = resolve(renderNamespace, outputFileMaskFunc(pageNumber));
+    const targetPath = resolve(renderNamespace, maskedFileName);
     if (!isPathWithinRoot(targetPath, renderNamespace)) {
         return;
     }
