@@ -58,7 +58,7 @@
         "test": "vitest run --coverage",
         "test:artifacts": "node ./__tests__/published-artifacts/verify-built-package.mjs",
         "test:docker": "npm run docker:build && npm run docker:run",
-        "test:license": "npx --yes license-checker --production \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\"",
+        "test:license": "npx --yes license-checker --production --onlyAllow \"ISC; MIT; MIT OR X11; BSD; Apache-2.0; Unlicense\"",
         "test:types": "tsc --pretty -p ./tsconfig.json"
     },
     "dependencies": {
