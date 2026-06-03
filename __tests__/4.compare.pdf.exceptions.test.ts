@@ -9,7 +9,11 @@ type ErrorClass = {
     name: string;
 };
 
-async function expectTypedError(comparePromise: Promise<unknown>, errorClass: ErrorClass, message: string): Promise<void> {
+async function expectTypedError(
+    comparePromise: Promise<unknown>,
+    errorClass: ErrorClass,
+    message: string,
+): Promise<void> {
     await expect(comparePromise).rejects.toThrow(errorClass);
     await expect(comparePromise).rejects.toThrow(message);
     await expect(comparePromise).rejects.toMatchObject({
@@ -21,21 +25,13 @@ async function expectTypedError(comparePromise: Promise<unknown>, errorClass: Er
 test(`should throw "Actual PDF file not found" exception`, async () => {
     const comparePromise = comparePdf('./test-data/NOT_actual.pdf', './test-data/pdf11.pdf');
 
-    await expectTypedError(
-        comparePromise,
-        ComparePdfInputError,
-        'PDF file not found: ./test-data/NOT_actual.pdf',
-    );
+    await expectTypedError(comparePromise, ComparePdfInputError, 'PDF file not found: ./test-data/NOT_actual.pdf');
 });
 
 test(`should throw "Expected PDF file not found" exception`, async () => {
     const comparePromise = comparePdf('./test-data/pdf1.pdf', './test-data/NOT_expected.pdf');
 
-    await expectTypedError(
-        comparePromise,
-        ComparePdfInputError,
-        'PDF file not found: ./test-data/NOT_expected.pdf',
-    );
+    await expectTypedError(comparePromise, ComparePdfInputError, 'PDF file not found: ./test-data/NOT_expected.pdf');
 });
 
 test(`should reject directory paths for actual PDF input`, async () => {
@@ -87,7 +83,11 @@ test.each([null, false, 0, {}])('should reject invalid diffsOutputFolder value %
         diffsOutputFolder: value as never,
     });
 
-    await expectTypedError(comparePromise, ComparePdfConfigurationError, 'diffsOutputFolder must be a non-empty string.');
+    await expectTypedError(
+        comparePromise,
+        ComparePdfConfigurationError,
+        'diffsOutputFolder must be a non-empty string.',
+    );
 });
 
 test('should reject empty diffsOutputFolder before comparison', async () => {
@@ -95,7 +95,11 @@ test('should reject empty diffsOutputFolder before comparison', async () => {
         diffsOutputFolder: '   ',
     });
 
-    await expectTypedError(comparePromise, ComparePdfConfigurationError, 'diffsOutputFolder must be a non-empty string.');
+    await expectTypedError(
+        comparePromise,
+        ComparePdfConfigurationError,
+        'diffsOutputFolder must be a non-empty string.',
+    );
 });
 
 test('should reject diffsOutputFolder values that point to an existing file', async () => {

@@ -113,7 +113,9 @@ test(`should report missing expected pages without invoking the PNG comparator`,
 test(`should report missing actual pages deterministically`, async () => {
     pdfToPngMock
         .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ name: 'expected-page-4.png', pageNumber: 4, content: Buffer.from('expected-page-4') }]);
+        .mockResolvedValueOnce([
+            { name: 'expected-page-4.png', pageNumber: 4, content: Buffer.from('expected-page-4') },
+        ]);
 
     await expect(comparePdfDetailed(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'))).resolves.toEqual({
         isEqual: false,
@@ -140,7 +142,9 @@ test(`should report missing actual pages deterministically`, async () => {
 test(`should order selected subset pages by pageNumber and surface missing counterparts deterministically`, async () => {
     pdfToPngMock
         .mockResolvedValueOnce([{ name: 'actual-page-4.png', pageNumber: 4, content: Buffer.from('actual-page-4') }])
-        .mockResolvedValueOnce([{ name: 'expected-page-2.png', pageNumber: 2, content: Buffer.from('expected-page-2') }]);
+        .mockResolvedValueOnce([
+            { name: 'expected-page-2.png', pageNumber: 2, content: Buffer.from('expected-page-2') },
+        ]);
 
     await expect(
         comparePdfDetailed(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
@@ -238,8 +242,24 @@ test(`should render metadata first and then compare one page at a time`, async (
         Buffer.from('expected-pdf'),
         expect.objectContaining({ returnMetadataOnly: true, returnPageContent: false }),
     );
-    expect(pdfToPngMock).toHaveBeenNthCalledWith(3, Buffer.from('actual-pdf'), expect.objectContaining({ pagesToProcess: [1] }));
-    expect(pdfToPngMock).toHaveBeenNthCalledWith(4, Buffer.from('expected-pdf'), expect.objectContaining({ pagesToProcess: [1] }));
-    expect(pdfToPngMock).toHaveBeenNthCalledWith(5, Buffer.from('actual-pdf'), expect.objectContaining({ pagesToProcess: [2] }));
-    expect(pdfToPngMock).toHaveBeenNthCalledWith(6, Buffer.from('expected-pdf'), expect.objectContaining({ pagesToProcess: [2] }));
+    expect(pdfToPngMock).toHaveBeenNthCalledWith(
+        3,
+        Buffer.from('actual-pdf'),
+        expect.objectContaining({ pagesToProcess: [1] }),
+    );
+    expect(pdfToPngMock).toHaveBeenNthCalledWith(
+        4,
+        Buffer.from('expected-pdf'),
+        expect.objectContaining({ pagesToProcess: [1] }),
+    );
+    expect(pdfToPngMock).toHaveBeenNthCalledWith(
+        5,
+        Buffer.from('actual-pdf'),
+        expect.objectContaining({ pagesToProcess: [2] }),
+    );
+    expect(pdfToPngMock).toHaveBeenNthCalledWith(
+        6,
+        Buffer.from('expected-pdf'),
+        expect.objectContaining({ pagesToProcess: [2] }),
+    );
 });

@@ -13,11 +13,13 @@ npm run test:docker    # Build Docker image and run tests inside it (Linux parit
 ```
 
 Run a single test file directly (skips `pretest`; requires `./out/` to be up to date):
+
 ```sh
 npx vitest run __tests__/1.compare.equal.pdf.files.test.ts
 ```
 
 Run Docker steps individually:
+
 ```sh
 npm run docker:build   # docker build → image: test-pdf-visual-compare
 npm run docker:run     # docker run (prepares ./test-results, then mounts it into the container)
@@ -72,6 +74,7 @@ pdf-visual-compare/
 ## Architecture
 
 This library exposes a boolean convenience API plus a detailed result API:
+
 - `comparePdf(actualPdf, expectedPdf, opts?)`
 - `comparePdfDetailed(actualPdf, expectedPdf, opts?)`
 
@@ -116,10 +119,10 @@ actualPdf / expectedPdf
 
 ### Dependencies
 
-| Package | Role |
-|---------|------|
+| Package                | Role                                                                                                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pdf-to-png-converter` | Converts PDF pages to PNG `Buffer`s. Uses PDF.js plus prebuilt `@napi-rs/canvas` binaries. Supports file paths and `ArrayBufferLike` inputs, passwords, partial page processing, and metadata-only discovery. |
-| `png-visual-compare` | Pixel-level PNG diff. Accepts `Buffer` or file path. Returns absolute pixel difference count. Writes diff images to disk. Supports exclusion rectangles and per-comparison thresholds. |
+| `png-visual-compare`   | Pixel-level PNG diff. Accepts `Buffer` or file path. Returns absolute pixel difference count. Writes diff images to disk. Supports exclusion rectangles and per-comparison thresholds.                        |
 
 ---
 
@@ -128,17 +131,15 @@ actualPdf / expectedPdf
 ### `comparePdf(actualPdf, expectedPdf, opts?)`
 
 **Signature:**
+
 ```typescript
-function comparePdf(
-    actualPdf: PdfInput,
-    expectedPdf: PdfInput,
-    opts?: ComparePdfOptions,
-): Promise<boolean>
+function comparePdf(actualPdf: PdfInput, expectedPdf: PdfInput, opts?: ComparePdfOptions): Promise<boolean>;
 ```
 
 **Returns:** `true` if all pages are within the configured pixel threshold, `false` otherwise.
 
 **Throws:**
+
 - `ComparePdfInputError` — unsupported input types, missing files, unreadable files, or non-file paths
 - `ComparePdfConfigurationError` — invalid options, invalid thresholds/page numbers, or path-boundary violations
 - `ComparePdfRenderingError` — renderer failures or missing rendered page content
@@ -147,12 +148,13 @@ function comparePdf(
 ### `comparePdfDetailed(actualPdf, expectedPdf, opts?)`
 
 **Signature:**
+
 ```typescript
 function comparePdfDetailed(
     actualPdf: PdfInput,
     expectedPdf: PdfInput,
     opts?: ComparePdfOptions,
-): Promise<ComparePdfDetailedResult>
+): Promise<ComparePdfDetailedResult>;
 ```
 
 Returns the structured result that powers `comparePdf()`, including page-level mismatch details and
@@ -164,18 +166,20 @@ diff output metadata.
 
 ```typescript
 type ComparePdfOptions = {
-    diffsOutputFolder?: string;          // Default: "./comparePdfOutput" (resolved absolute path)
-    compareThreshold?: number;           // Default: 0 (pixel-perfect). Absolute pixel count, NOT a percentage.
-    excludedAreas?: readonly ExcludedPageArea[];  // Default: []
-    pdfToPngConvertOptions?: PdfToPngOptions;     // Forwarded to pdf-to-png-converter
+    diffsOutputFolder?: string; // Default: "./comparePdfOutput" (resolved absolute path)
+    compareThreshold?: number; // Default: 0 (pixel-perfect). Absolute pixel count, NOT a percentage.
+    excludedAreas?: readonly ExcludedPageArea[]; // Default: []
+    pdfToPngConvertOptions?: PdfToPngOptions; // Forwarded to pdf-to-png-converter
 };
 ```
 
 **`pdfToPngConvertOptions` defaults applied inside `comparePdf`:**
+
 - `viewportScale`: `2.0` (applied only when not provided by the caller)
 - `outputFileMaskFunc`: `(n) => "comparePdf_${n}.png"` (applied only when not provided)
 
 All other `PdfToPngOptions` fields are passed through as-is. Useful options:
+
 - `pagesToProcess: number[]` — compare only specific pages (1-based)
 - `pdfFilePassword: string` — handle encrypted PDFs
 - `disableFontFace: boolean` — default `true` in pdf-to-png-converter
@@ -189,11 +193,11 @@ All other `PdfToPngOptions` fields are passed through as-is. Useful options:
 
 ```typescript
 type ExcludedPageArea = {
-    pageNumber: number;          // 1-based rendered page number this exclusion applies to
-    excludedAreas?: PageArea[];  // [{ x1, y1, x2, y2 }] in pixels at viewportScale
-    excludedAreaColor?: RgbColor;   // { r, g, b } 0–255; fill color in diff images
-    diffFilePath?: string;       // Override diff image output path for this page
-    matchingThreshold?: number;  // Per-page threshold, overrides compareThreshold
+    pageNumber: number; // 1-based rendered page number this exclusion applies to
+    excludedAreas?: PageArea[]; // [{ x1, y1, x2, y2 }] in pixels at viewportScale
+    excludedAreaColor?: RgbColor; // { r, g, b } 0–255; fill color in diff images
+    diffFilePath?: string; // Override diff image output path for this page
+    matchingThreshold?: number; // Per-page threshold, overrides compareThreshold
 };
 ```
 
@@ -215,7 +219,7 @@ the first matching entry wins.
 excludedAreas: [
     { pageNumber: 1, excludedAreas: [{ x1: 700, y1: 375, x2: 790, y2: 400 }] },
     { pageNumber: 2, excludedAreas: [{ x1: 680, y1: 240, x2: 955, y2: 465 }] },
-]
+];
 ```
 
 ### `compareThreshold` is an absolute pixel count
@@ -229,9 +233,11 @@ excludedAreas: [
 ### `.js` extensions in TypeScript imports
 
 All intra-package imports use `.js` extensions despite the source being TypeScript:
+
 ```typescript
 import { getDefaultDiffsFolder } from './const.js';
 ```
+
 This is required by `"moduleResolution": "node16"` in `tsconfig.json`. The TypeScript compiler maps `.js` back to `.ts` sources at compile time.
 
 ### Page matching by `pageNumber`
@@ -254,18 +260,19 @@ from both inputs and compares exactly the planned page pairs.
 
 **Test files** are in `__tests__/` and numbered for deterministic execution order:
 
-| File | What it covers |
-|------|----------------|
-| `1.*` | Equal file paths → `true` |
-| `2.*` | Non-equal files → `false`; mismatched page count → `false` |
-| `3.*` | Non-equal PDFs become equal when differing regions are excluded |
+| File  | What it covers                                                                                                                           |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `1.*` | Equal file paths → `true`                                                                                                                |
+| `2.*` | Non-equal files → `false`; mismatched page count → `false`                                                                               |
+| `3.*` | Non-equal PDFs become equal when differing regions are excluded                                                                          |
 | `4.*` | All error conditions: missing file (actual), missing file (expected), invalid type (actual), invalid type (expected), negative threshold |
-| `5.*` | Threshold boundary: exact match, one below, one above, equal PDFs with threshold |
-| `6.*` | Equal `Buffer` inputs → `true` |
-| `7.*` | Non-equal `Buffer` inputs → `false`; mismatched page count via buffers → `false` |
-| `8.*` | Custom `outputFileMaskFunc` and `viewportScale` pass through correctly |
+| `5.*` | Threshold boundary: exact match, one below, one above, equal PDFs with threshold                                                         |
+| `6.*` | Equal `Buffer` inputs → `true`                                                                                                           |
+| `7.*` | Non-equal `Buffer` inputs → `false`; mismatched page count via buffers → `false`                                                         |
+| `8.*` | Custom `outputFileMaskFunc` and `viewportScale` pass through correctly                                                                   |
 
 **Test data** (`./test-data/`):
+
 - `pdf1.pdf` / `pdf11.pdf` — visually identical 2-page PDFs
 - `pdf2.pdf` — 2-page PDF that differs from `pdf1.pdf` by ~14 058 pixels (at scale 2.0)
 - `pdf3.pdf` — different page count from `pdf1.pdf`
@@ -279,12 +286,15 @@ from both inputs and compares exactly the planned page pairs.
 ## Build & Publish
 
 **Build:**
+
 ```sh
 npm run build   # → tsc --pretty, output in ./out/
 ```
+
 TypeScript compiles `src/**/*` to `./out/`. Declaration files (`.d.ts`) are generated alongside each `.js` file. Source maps are not emitted.
 
 **What is published to npm (`"files": ["./out"]`):**
+
 ```
 out/
 ├── index.js / index.d.ts
@@ -294,9 +304,11 @@ out/
     ├── ComparePdfOptions.js / ComparePdfOptions.d.ts
     └── ExcludedPageArea.js / ExcludedPageArea.d.ts
 ```
+
 Total published size: ~11 KB. Source files, tests, and config are excluded.
 
 **Package entry points:**
+
 - `"main": "./out/index.js"` — legacy CJS entry
 - `"types": "./out/index.d.ts"` — TypeScript declarations
 - `"exports"."."` — explicit exports map for bundlers and modern Node.js
@@ -309,9 +321,9 @@ Total published size: ~11 KB. Source files, tests, and config are excluded.
 
 ### test.yml — runs on every push (except `release/*` branches)
 
-| Job | OS | Node |
-|-----|----|------|
-| `ubuntu` | ubuntu-latest | 24.x |
+| Job       | OS             | Node |
+| --------- | -------------- | ---- |
+| `ubuntu`  | ubuntu-latest  | 24.x |
 | `windows` | windows-latest | 22.x |
 
 Both jobs: `npm ci` → `npm test`.
@@ -325,6 +337,7 @@ Both jobs: `npm ci` → `npm test`.
 ## Code Style
 
 **Prettier** (`.prettierrc`):
+
 - `tabWidth: 4`, `useTabs: false`
 - `singleQuote: true`, `semi: true`
 - `trailingComma: "all"`, `printWidth: 120`
@@ -332,6 +345,7 @@ Both jobs: `npm ci` → `npm test`.
 - JSON files also use `tabWidth: 4`
 
 **ESLint** (`eslint.config.mjs`):
+
 - Extends `typescript-eslint` recommended rules
 - `@typescript-eslint/no-explicit-any`: disabled — used in `validateInputFileType` for runtime duck-typing
 - `@typescript-eslint/no-require-imports`: disabled
@@ -343,15 +357,15 @@ Both jobs: `npm ci` → `npm test`.
 
 ```json
 {
-  "module": "nodenext",
-  "moduleResolution": "node16",
-  "target": "es2022",
-  "lib": ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
-  "strict": true,
-  "declaration": true,
-  "outDir": "./out",
-  "esModuleInterop": true,
-  "skipLibCheck": true
+    "module": "nodenext",
+    "moduleResolution": "node16",
+    "target": "es2022",
+    "lib": ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
+    "strict": true,
+    "declaration": true,
+    "outDir": "./out",
+    "esModuleInterop": true,
+    "skipLibCheck": true
 }
 ```
 

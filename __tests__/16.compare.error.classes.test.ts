@@ -5,7 +5,6 @@ import { ComparePdfError } from '../src/errors/ComparePdfError.js';
 import { ComparePdfInputError } from '../src/errors/ComparePdfInputError.js';
 import { ComparePdfRenderingError } from '../src/errors/ComparePdfRenderingError.js';
 
-
 test(`should expose library error subclasses with stable names and causes`, () => {
     const cause = new Error('root cause');
 

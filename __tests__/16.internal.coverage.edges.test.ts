@@ -10,7 +10,12 @@ import {
 
 test(`should reject blank diffFilePath directly in comparePngOptions adapter`, () => {
     expect(() =>
-        toComparePngOptions({ pageNumber: 1, diffFilePath: '' }, resolve('./test-results/compare/16-1'), 'page-1.png', true),
+        toComparePngOptions(
+            { pageNumber: 1, diffFilePath: '' },
+            resolve('./test-results/compare/16-1'),
+            'page-1.png',
+            true,
+        ),
     ).toThrow('diffFilePath must be a non-empty string.');
 });
 

@@ -1,20 +1,15 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 
-const {
-    closeSyncMock,
-    fstatSyncMock,
-    openSyncMock,
-    readFileSyncMock,
-    realpathSyncMock,
-    statSyncMock,
-} = vi.hoisted(() => ({
-    closeSyncMock: vi.fn(),
-    fstatSyncMock: vi.fn(),
-    openSyncMock: vi.fn(),
-    readFileSyncMock: vi.fn(),
-    realpathSyncMock: vi.fn(),
-    statSyncMock: vi.fn(),
-}));
+const { closeSyncMock, fstatSyncMock, openSyncMock, readFileSyncMock, realpathSyncMock, statSyncMock } = vi.hoisted(
+    () => ({
+        closeSyncMock: vi.fn(),
+        fstatSyncMock: vi.fn(),
+        openSyncMock: vi.fn(),
+        readFileSyncMock: vi.fn(),
+        realpathSyncMock: vi.fn(),
+        statSyncMock: vi.fn(),
+    }),
+);
 
 vi.mock('node:fs', async () => {
     const actual = await vi.importActual<typeof import('node:fs')>('node:fs');

@@ -37,7 +37,7 @@ import type { PdfToPngOptions, PngPageOutput } from 'pdf-to-png-converter';
  */
 export function comparePdf(actualPdf: PdfInput, expectedPdf: PdfInput, opts?: ComparePdfOptions): Promise<boolean>;
 export async function comparePdf(actualPdf: unknown, expectedPdf: unknown, opts?: unknown): Promise<boolean> {
-    const result = await comparePdfDetailed(
+    const result: ComparePdfDetailedResult = await comparePdfDetailed(
         actualPdf as PdfInput,
         expectedPdf as PdfInput,
         opts as ComparePdfOptions | undefined,

@@ -138,7 +138,9 @@ async function runPdfToPng(
     try {
         const renderedPages = await pdfToPng(toRenderablePdfInput(pdfFile), {
             ...pdfToPngConvertOpts,
-            outputFolder: pdfToPngConvertOpts.outputFolder ? join(pdfToPngConvertOpts.outputFolder, sourceLabel) : undefined,
+            outputFolder: pdfToPngConvertOpts.outputFolder
+                ? join(pdfToPngConvertOpts.outputFolder, sourceLabel)
+                : undefined,
         });
 
         if (!Array.isArray(renderedPages)) {
