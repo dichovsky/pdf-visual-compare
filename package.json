@@ -29,8 +29,8 @@
     "author": "Igor Magdich <magdich.igor@gmail.com>",
     "exports": {
         ".": {
-            "require": "./out/index.js",
             "types": "./out/index.d.ts",
+            "require": "./out/index.js",
             "default": "./out/index.js"
         }
     },
@@ -62,13 +62,13 @@
         "test:types": "tsc --pretty -p ./tsconfig.json"
     },
     "dependencies": {
-        "pdf-to-png-converter": "~4.1.0",
-        "png-visual-compare": "~6.1.0"
+        "pdf-to-png-converter": "~4.1.1",
+        "png-visual-compare": "~6.2.0"
     },
     "devDependencies": {
-        "@types/node": "^25.9.2",
+        "@types/node": "^26.0.0",
         "@types/pngjs": "^6.0.5",
-        "@vitest/coverage-v8": "^4.1.8",
+        "@vitest/coverage-v8": "^4.1.9",
         "eslint": "^10.5.0",
         "jiti": "^2.7.0",
         "prettier": "~3.8.4",
