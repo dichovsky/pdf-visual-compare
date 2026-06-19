@@ -24,11 +24,11 @@ First 4.x release — a major release with breaking changes to the supported Nod
 
 ### Changed
 
-- **BREAKING:** Minimum Node.js raised from `>=20` to `>=24` (aligns with `pdf-to-png-converter` 4.x).
-- **BREAKING:** `ComparePdfOptions.pdfToPngConvertOptions` is now typed as the library-owned `PdfRenderOptions` instead of the downstream `PdfToPngOptions`. It is narrowed to comparison-safe render settings — runtime attempts to disable page content or enable parallel rendering are rejected.
+- **BREAKING:** Minimum Node.js raised from `>=20` to `>=24` (required by the bundled `@napi-rs/canvas` native binaries pulled in through `pdf-to-png-converter` 4.x).
+- **BREAKING:** `ComparePdfOptions.pdfToPngConvertOptions` is now typed as the library-owned `PdfRenderOptions` instead of the downstream `PdfToPngOptions`. It is narrowed to comparison-safe render settings — the downstream rendering-control properties `returnPageContent`, `returnMetadataOnly`, `processPagesInParallel`, and `concurrencyLimit` are rejected at runtime with a `ComparePdfConfigurationError`.
 - **BREAKING:** `excludedAreas` entries are now typed via `PageExclusion` (`ExcludedPageArea` remains exported), with area and color fields using the library-owned `PageArea` and `RgbColor` types instead of downstream types.
 - `comparePdf` now accepts `Buffer` as an explicit input type in addition to `string` and `ArrayBufferLike`.
-- Upgraded runtime dependencies: `pdf-to-png-converter` `3.18.x` → `~4.1.1` and `png-visual-compare` `~5.1.0` → `~6.2.0`; with the latter, `ExcludedPageArea.excludedAreaColor` is now applied at render time.
+- Upgraded runtime dependencies: `pdf-to-png-converter` `~3.18.0` → `~4.1.1` and `png-visual-compare` `~5.1.0` → `~6.2.0`; with the latter, `ExcludedPageArea.excludedAreaColor` is now applied at render time.
 - Updated the package description to present the library as a PDF visual comparison tool with no external system package dependencies.
 
 ### Removed
