@@ -29,8 +29,8 @@
     "author": "Igor Magdich <magdich.igor@gmail.com>",
     "exports": {
         ".": {
-            "require": "./out/index.js",
             "types": "./out/index.d.ts",
+            "require": "./out/index.js",
             "default": "./out/index.js"
         }
     },
