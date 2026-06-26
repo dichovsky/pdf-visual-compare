@@ -1,5 +1,7 @@
+import { ComparePdfConfigurationError } from './errors/ComparePdfConfigurationError.js';
 import { comparePlannedPage } from './internal/comparePlannedPage.js';
 import { buildPageNumberComparisonPlan } from './internal/pageComparisonPlan.js';
+import { summarizePageResults } from './internal/mismatchStats.js';
 import { normalizeComparisonOptions } from './internal/normalizeComparisonOptions.js';
 import { normalizePdfInput } from './internal/normalizePdfInput.js';
 import { listRenderedPageNumbers, PlannedPdfPages, renderPdfPage } from './internal/renderPdfPages.js';
@@ -105,9 +107,10 @@ export async function comparePdfDetailed(
         expectedPlanningPages.pageNumbers,
         normalizedOptions.excludedAreas,
     );
+    const selectedComparisonPlan = selectPlanPages(comparisonPlan, normalizedOptions.selectedPageNumbers);
     const pages: ComparePdfPageResult[] = [];
 
-    for (const planEntry of comparisonPlan) {
+    for (const planEntry of selectedComparisonPlan) {
         const actualPage = actualPageNumberSet.has(planEntry.pageNumber)
             ? await resolvePlannedPage(
                   actualPlanningPages.prefetchedPages.get(planEntry.pageNumber),
@@ -135,10 +138,37 @@ export async function comparePdfDetailed(
         actualPageCount: actualPlanningPages.pageNumbers.length,
         expectedPageCount: expectedPlanningPages.pageNumbers.length,
         compareThreshold: normalizedOptions.compareThreshold,
+        compareThresholdPercent: normalizedOptions.compareThresholdPercent ?? null,
         diffsOutputFolder: normalizedOptions.writeDiffs ? normalizedOptions.diffsOutputFolder : null,
         pages,
+        summary: summarizePageResults(pages),
         writeDiffs: normalizedOptions.writeDiffs,
     };
+}
+
+/**
+ * Restricts a comparison plan to the explicitly selected page numbers, preserving order.
+ * Returns the plan unchanged when no selection was provided. Selected page numbers absent
+ * from the plan (present in neither PDF) are not compared.
+ *
+ * Throws when a selection was provided but matches no rendered page in either PDF: returning
+ * an empty plan would make the comparison pass vacuously (`[].every(...)` is `true`), silently
+ * hiding a typo'd or stale page selection from CI.
+ */
+function selectPlanPages(
+    plan: readonly PageComparisonPlanEntry[],
+    selectedPageNumbers: ReadonlySet<number> | undefined,
+): PageComparisonPlanEntry[] {
+    if (selectedPageNumbers === undefined) {
+        return [...plan];
+    }
+
+    const selectedPlan = plan.filter((planEntry) => selectedPageNumbers.has(planEntry.pageNumber));
+    if (selectedPlan.length === 0) {
+        throw new ComparePdfConfigurationError('pages selection matched no rendered page in either PDF.');
+    }
+
+    return selectedPlan;
 }
 
 async function resolvePlannedPage(

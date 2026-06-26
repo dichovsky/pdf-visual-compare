@@ -2,6 +2,7 @@ import { comparePng } from 'png-visual-compare';
 import { ComparePdfComparisonError } from '../errors/ComparePdfComparisonError.js';
 import type { ComparePdfPageResult } from '../types/ComparePdfPageResult.js';
 import { toComparePngOptions } from './adapters/comparePngOptions.js';
+import { computeMismatchPercent } from './mismatchStats.js';
 import {
     assertCanonicalDiffOutputPath,
     assertDiffOutputPathUsesRealFilesystemEntries,
@@ -17,6 +18,8 @@ export function comparePlannedPage(
     normalizedOptions: NormalizedComparePdfOptions,
 ): ComparePdfPageResult {
     const threshold = planEntry.pageExclusion?.matchingThreshold ?? normalizedOptions.compareThreshold;
+    const thresholdPercent =
+        planEntry.pageExclusion?.matchingThresholdPercent ?? normalizedOptions.compareThresholdPercent ?? null;
     const actualPageName = planEntry.actualPage?.name ?? null;
     const expectedPageName = planEntry.expectedPage?.name ?? null;
 
@@ -26,7 +29,9 @@ export function comparePlannedPage(
             status: planEntry.actualPage ? 'missing-expected' : 'missing-actual',
             isEqual: false,
             threshold,
+            thresholdPercent,
             mismatchCount: null,
+            mismatchPercent: null,
             diffFilePath: null,
             actualPageName,
             expectedPageName,
@@ -82,14 +87,28 @@ export function comparePlannedPage(
         });
     }
 
-    const isEqual = mismatchCount <= threshold;
+    const mismatchPercent = computeMismatchPercent(
+        mismatchCount,
+        planEntry.actualPage.width,
+        planEntry.actualPage.height,
+        planEntry.expectedPage.width,
+        planEntry.expectedPage.height,
+    );
+    // A page passes when it is within EITHER the pixel-count threshold OR the configured
+    // percentage threshold. The percentage tolerance therefore relaxes, never tightens, the
+    // pixel-count default; when no percentage threshold is configured only the pixel check applies.
+    const withinPixels = mismatchCount <= threshold;
+    const withinPercent = thresholdPercent !== null && mismatchPercent <= thresholdPercent;
+    const isEqual = withinPixels || withinPercent;
 
     return {
         pageNumber: planEntry.pageNumber,
         status: isEqual ? 'matched' : 'mismatched',
         isEqual,
         threshold,
+        thresholdPercent,
         mismatchCount,
+        mismatchPercent,
         diffFilePath,
         actualPageName,
         expectedPageName,

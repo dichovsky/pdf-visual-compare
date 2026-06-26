@@ -19,8 +19,10 @@ export type PageComparisonPlanEntry = {
 export type NormalizedComparePdfOptions = {
     allowedInputRoot?: AllowedInputRoot;
     compareThreshold: number;
+    compareThresholdPercent?: number;
     diffsOutputFolder: string;
     excludedAreas: readonly PageExclusion[];
     pdfToPngConvertOpts: PdfToPngOptions;
+    selectedPageNumbers?: ReadonlySet<number>;
     writeDiffs: boolean;
 };

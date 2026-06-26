@@ -5,7 +5,7 @@ export default defineConfig({
         testTimeout: 90000,
         coverage: {
             provider: 'v8',
-            exclude: ['**/index.ts', 'scripts/**'],
+            exclude: ['**/index.ts', '**/cli.ts', 'scripts/**'],
             thresholds: {
                 statements: 100,
                 branches: 90,

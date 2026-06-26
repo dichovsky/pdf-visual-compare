@@ -9,6 +9,8 @@
  * @module pdf-visual-compare
  */
 export { comparePdf, comparePdfDetailed } from './comparePdf.js';
+export { toJsonReport } from './serialize/jsonReport.js';
+export { toJUnitReport } from './serialize/junitReport.js';
 export { ComparePdfComparisonError } from './errors/ComparePdfComparisonError.js';
 export { ComparePdfConfigurationError } from './errors/ComparePdfConfigurationError.js';
 export { ComparePdfError } from './errors/ComparePdfError.js';
@@ -19,6 +21,7 @@ export type { ComparePdfOptions } from './types/ComparePdfOptions.js';
 export type { ComparePdfDetailedResult } from './types/ComparePdfDetailedResult.js';
 export type { ComparePdfPageResult } from './types/ComparePdfPageResult.js';
 export type { ComparePdfPageStatus } from './types/ComparePdfPageStatus.js';
+export type { ComparePdfSummary } from './types/ComparePdfSummary.js';
 export type { ExcludedPageArea } from './types/ExcludedPageArea.js';
 export type { PageArea } from './types/PageArea.js';
 export type { PageExclusion } from './types/PageExclusion.js';
