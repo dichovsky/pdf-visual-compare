@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **CLI** — `pdf-visual-compare <actual.pdf> <expected.pdf> [options]` (run via `npx pdf-visual-compare`). Options: `-t/--threshold`, `--threshold-percent`, `-p/--pages`, `-f/--format <text|json|junit>`, `-o/--out`, `--fail-on-diff`, `-h/--help`, `-v/--version`. Exit codes: `0` success, `1` differences found with `--fail-on-diff`, `2` usage or runtime error.
+- `ComparePdfOptions.pages` — restrict the comparison to a subset of pages, as a range-spec string (`"1-3,5,7"`) or an array of 1-based page numbers (`[1, 2, 3, 5, 7]`). A selection that matches no rendered page in either PDF throws a `ComparePdfConfigurationError` rather than passing vacuously.
+- `ComparePdfOptions.compareThresholdPercent` and per-page `PageExclusion.matchingThresholdPercent` — an optional percentage threshold evaluated alongside the existing pixel-count threshold. A page passes when it is within EITHER threshold, so a percentage relaxes (never tightens) the pixel-count default.
+- Per-page change statistics on `ComparePdfPageResult`: `mismatchPercent` (differing pixels as a percentage of the rendered page area) and `thresholdPercent` (the applied percentage threshold, or `null`).
+- Document-level rollup on `ComparePdfDetailedResult`: a new `summary` (`ComparePdfSummary` — page counts by status, `maxMismatchPercent`, `totalMismatchCount`) plus `compareThresholdPercent`.
+- `toJsonReport(result)` and `toJUnitReport(result)` — serialize a `ComparePdfDetailedResult` to pretty JSON or a JUnit XML report (one `<testcase>` per page). Both are exported from the package entry point.
+- New exported type `ComparePdfSummary`.
+
 ## [4.0.0] - 2026-06-19
 
 First 4.x release — a major release with breaking changes to the supported Node.js runtime, supported platforms, and public type surface, alongside a substantially expanded API. All changes below are relative to the last published release, 3.5.0.

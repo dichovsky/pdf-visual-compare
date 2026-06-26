@@ -14,6 +14,7 @@ npm test               # Full test suite: clean + lint + license check + build +
 npx vitest run         # Run tests without the pre-steps (faster for iteration)
 npx vitest run __tests__/1.compare.equal.pdf.files.test.ts  # Run a single test file
 npm run clean          # Remove ./out, ./coverage, ./test-results, ./comparePdfOutput
+node ./out/cli.js a.pdf b.pdf  # Run the built CLI (published entry point: `npx pdf-visual-compare`)
 ```
 
 Tests have a 90-second timeout (`vitest.config.mjs`) because PDF-to-PNG conversion is slow. Coverage thresholds are enforced (100% statements/lines/functions, 90% branches).
@@ -41,14 +42,20 @@ This is a small TypeScript library published to npm. Source lives in `src/`, com
 
 **`excludedAreas` matching:** entries in `ComparePdfOptions.excludedAreas` are matched to pages by their `pageNumber` field (1-based, not array index). An entry with `pageNumber: 1` applies to the first page regardless of its position in the array.
 
-**`ComparePngOptions` surface:** `comparePdf` forwards `excludedAreas`, `excludedAreaColor`, `diffFilePath`, and `throwErrorOnInvalidInputData` to `png-visual-compare`. The `ExcludedPageArea.matchingThreshold` field is still applied inside `comparePdf` as a per-page threshold override rather than being forwarded downstream.
+**`ComparePngOptions` surface:** `comparePdf` forwards `excludedAreas`, `excludedAreaColor`, `diffFilePath`, and `throwErrorOnInvalidInputData` to `png-visual-compare`. The per-page `ExcludedPageArea.matchingThreshold` (pixels) and `matchingThresholdPercent` (0–100) are applied inside `comparePdf` as threshold overrides rather than being forwarded downstream.
+
+**Thresholds:** `compareThreshold` (absolute differing-pixel count) and the optional `compareThresholdPercent` (0–100) combine with **OR semantics** — a page passes when within EITHER threshold, so a percentage relaxes (never tightens) the pixel default. `mismatchPercent = mismatchCount / max(actualArea, expectedArea) * 100` is computed in `comparePlannedPage` and rolled up into `ComparePdfDetailedResult.summary` (`src/internal/mismatchStats.ts`).
+
+**Page selection:** `ComparePdfOptions.pages` (a `"1-3,5,7"` spec or a `number[]`) filters the comparison plan in `comparePdf.ts` after page discovery, so only selected pages are rendered. Parsing lives in `src/internal/parsePageRange.ts` (bounded by `MAX_SELECTED_PAGES`); a selection matching no rendered page throws instead of passing vacuously.
 
 **Public API** (exported from `src/index.ts`):
 
-- `comparePdf(actualPdf: PdfInput, expectedPdf: PdfInput, opts?: ComparePdfOptions): Promise<boolean>`
-- `ComparePdfOptions` type
-- `PdfInput` type
-- `ExcludedPageArea` type
+- `comparePdf(actualPdf, expectedPdf, opts?): Promise<boolean>` and `comparePdfDetailed(actualPdf, expectedPdf, opts?): Promise<ComparePdfDetailedResult>`
+- Reports: `toJsonReport(result)` and `toJUnitReport(result)` serialize a detailed result to JSON / JUnit XML (`src/serialize/*`)
+- Error classes: `ComparePdfError` plus `ComparePdfConfigurationError`, `ComparePdfInputError`, `ComparePdfRenderingError`, `ComparePdfComparisonError`
+- Types: `ComparePdfOptions`, `ComparePdfDetailedResult`, `ComparePdfPageResult`, `ComparePdfPageStatus`, `ComparePdfSummary`, `PdfInput`, `PdfRenderOptions`, `PageExclusion` (alias `ExcludedPageArea`), `PageArea`, `RgbColor`
+
+**CLI:** `npx pdf-visual-compare <actual.pdf> <expected.pdf> [--threshold N] [--threshold-percent N] [--pages "1-3,5"] [--format text|json|junit] [--out dir] [--fail-on-diff]`; exit codes `0`/`1`/`2`. Hand-rolled (no `commander`) — bin `out/cli.js`, logic in `src/cli/*` (dependency-injection-tested), shim `src/cli.ts` (shebang preserved by `tsc`, excluded from coverage like `index.ts`).
 
 **Dependencies:**
 
