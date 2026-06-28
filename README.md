@@ -30,6 +30,7 @@
     - [Detailed comparison results](#detailed-comparison-results)
     - [Comparison with options](#comparison-with-options)
     - [Comparing PDF buffers](#comparing-pdf-buffers)
+- [CLI](#cli)
 - [API](#api)
     - [comparePdf](#comparepdfactualpdf-expectedpdf-options)
     - [comparePdfDetailed](#comparepdfdetailedactualpdf-expectedpdf-options)
@@ -37,6 +38,8 @@
     - [ComparePdfDetailedResult](#comparepdfdetailedresult)
     - [ComparePdfPageResult](#comparepdfpageresult)
     - [ComparePdfPageStatus](#comparepdfpagestatus)
+    - [ComparePdfSummary](#comparepdfsummary)
+    - [toJsonReport / toJUnitReport](#tojsonreport--tojunitreport)
     - [PdfRenderOptions](#pdfrenderoptions)
     - [PageExclusion](#pageexclusion)
     - [PageArea](#pagearea)
@@ -141,6 +144,14 @@ const options: ComparePdfOptions = {
     // 0 = pixel-perfect match required (default). Must be a finite non-negative integer.
     compareThreshold: 200,
 
+    // Optional percentage threshold (0–100), evaluated ALONGSIDE compareThreshold.
+    // A page passes when within EITHER threshold, so a percentage relaxes the pixel default.
+    compareThresholdPercent: 1.5,
+
+    // Optionally restrict the comparison to a subset of pages: a range spec or a number[].
+    // A selection that matches no rendered page in either PDF throws instead of passing.
+    pages: '1-3,5,7',
+
     // Per-page exclusion zones, matched by the `pageNumber` field (1-based).
     // `pageNumber: 1` → first page, `pageNumber: 2` → second page, etc.
     // Pixel coordinates are relative to the rendered PNG at the configured viewportScale.
@@ -216,6 +227,44 @@ const isEqual = await comparePdf(actual, expected);
 
 ---
 
+## CLI
+
+Compare two PDFs straight from the terminal — no test file required:
+
+```sh
+npx pdf-visual-compare actual.pdf expected.pdf
+```
+
+```text
+Usage: pdf-visual-compare <actual.pdf> <expected.pdf> [options]
+
+Options:
+  -t, --threshold <n>          Max differing pixels allowed per page (default 0)
+      --threshold-percent <n>  Max differing pixels as a percent (0-100); a page passes
+                               when within EITHER the pixel OR the percent threshold
+  -p, --pages <spec>           Compare only these pages, e.g. "1-3,5,7"
+  -f, --format <type>          Output format: text | json | junit (default text)
+  -o, --out <dir>              Write diff PNGs into <dir>
+      --fail-on-diff           Exit with code 1 when differences are found
+  -h, --help                   Show this help
+  -v, --version                Print the version
+      --                       Treat all following arguments as file paths
+```
+
+**Exit codes:** `0` success, `1` differences found (only with `--fail-on-diff`), `2` usage or runtime error.
+
+CI example — fail the job on any visual difference and emit a JUnit report:
+
+```sh
+npx pdf-visual-compare actual.pdf expected.pdf --fail-on-diff --format junit > pdf-report.xml
+```
+
+The CLI is a thin wrapper over `comparePdfDetailed()`; flags map directly to `ComparePdfOptions`
+(`--threshold` → `compareThreshold`, `--threshold-percent` → `compareThresholdPercent`,
+`--pages` → `pages`, `--out` → `writeDiffs` + `diffsOutputFolder`).
+
+---
+
 ## API
 
 ### `comparePdf(actualPdf, expectedPdf, options?)`
@@ -268,6 +317,10 @@ still validated even when `writeDiffs` is `false`.
 - `ComparePdfConfigurationError: Compare Threshold must be a finite non-negative integer.` — when `options.compareThreshold` is negative, fractional, `NaN`, or infinite.
 - `ComparePdfConfigurationError: Matching Threshold must be a finite non-negative integer.` — when `excludedAreas[].matchingThreshold` is negative, fractional, `NaN`, or infinite.
 - `ComparePdfConfigurationError: Page Number must be a finite positive integer.` — when `excludedAreas[].pageNumber` is `<= 0`, fractional, `NaN`, or infinite.
+- `ComparePdfConfigurationError: Compare Threshold Percent must be a finite number between 0 and 100.` — when `options.compareThresholdPercent` is negative, greater than 100, `NaN`, or infinite.
+- `ComparePdfConfigurationError: Matching Threshold Percent must be a finite number between 0 and 100.` — when `excludedAreas[].matchingThresholdPercent` is negative, greater than 100, `NaN`, or infinite.
+- `ComparePdfConfigurationError: pages selection matched no rendered page in either PDF.` — when `options.pages` selects only page numbers that exist in neither PDF.
+- `ComparePdfConfigurationError: pages ...` — when `options.pages` is otherwise malformed (empty selection, descending range, non-integer or out-of-safe-range page number, or a selection that exceeds the internal page limit).
 - `ComparePdfConfigurationError: pdfToPngConvertOptions must be an object.` — when an untyped caller passes a non-object render configuration.
 - `ComparePdfConfigurationError: Unsupported pdfToPngConvertOptions properties: ...` — when an untyped caller passes render settings that would skip page content or enable parallel rendering.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must be a non-empty string.` — when an untyped caller passes a non-string or blank render output path.
@@ -303,6 +356,8 @@ For untrusted environments, prefer binary inputs or set `ComparePdfOptions.allow
 | `diffsOutputFolder`      | `string`           | `./comparePdfOutput` | Trusted diff-output root; validated when provided, and used for written diff PNGs only when `writeDiffs` is `true`                                |
 | `allowedInputRoot`       | `string`           | `undefined`          | Optional root directory that constrains string PDF inputs; when omitted, string paths are trusted caller-controlled inputs                        |
 | `compareThreshold`       | `number`           | `0`                  | Maximum number of differing pixels allowed before comparison fails; must be a finite non-negative integer                                         |
+| `compareThresholdPercent` | `number`          | `undefined`          | Optional percentage threshold (0–100) evaluated alongside `compareThreshold`; a page passes when within EITHER threshold                          |
+| `pages`                  | `string \| number[]` | `undefined`        | Restrict the comparison to a subset of pages (e.g. `"1-3,5,7"` or `[1, 2, 3]`); a selection matching no rendered page throws                       |
 | `excludedAreas`          | `PageExclusion[]`  | `[]`                 | Per-page exclusion zones matched by rendered `pageNumber` (1-based); non-rendered pages are ignored and the first duplicate entry for a page wins |
 | `pdfToPngConvertOptions` | `PdfRenderOptions` | see below            | Options for rendering PDF pages before comparison                                                                                                 |
 
@@ -313,10 +368,12 @@ For untrusted environments, prefer binary inputs or set `ComparePdfOptions.allow
 | `isEqual`           | `boolean`                | `true` when every planned page comparison is within threshold |
 | `actualPageCount`   | `number`                 | Number of rendered pages produced from the actual PDF         |
 | `expectedPageCount` | `number`                 | Number of rendered pages produced from the expected PDF       |
-| `compareThreshold`  | `number`                 | Document-level threshold supplied to the comparison           |
+| `compareThreshold`  | `number`                 | Document-level pixel threshold supplied to the comparison     |
+| `compareThresholdPercent` | `number \| null`   | Document-level percentage threshold supplied, or `null` when unset |
 | `writeDiffs`        | `boolean`                | `true` when diff PNG writing was enabled for the comparison   |
 | `diffsOutputFolder` | `string \| null`         | Resolved base diff output folder, or `null` when disabled     |
 | `pages`             | `ComparePdfPageResult[]` | Page-level outcomes sorted by `pageNumber`                    |
+| `summary`           | `ComparePdfSummary`      | Document-level rollup derived from `pages`                    |
 
 ### `ComparePdfPageResult`
 
@@ -325,8 +382,10 @@ For untrusted environments, prefer binary inputs or set `ComparePdfOptions.allow
 | `pageNumber`       | `number`               | 1-based rendered page number                                        |
 | `status`           | `ComparePdfPageStatus` | `matched`, `mismatched`, `missing-actual`, or `missing-expected`    |
 | `isEqual`          | `boolean`              | `true` when this page is within its applicable threshold            |
-| `threshold`        | `number`               | Threshold actually applied to this page                             |
+| `threshold`        | `number`               | Pixel threshold actually applied to this page                       |
+| `thresholdPercent` | `number \| null`       | Percentage threshold applied to this page, or `null` when unset     |
 | `mismatchCount`    | `number \| null`       | Comparator mismatch count, or `null` when the page was not compared |
+| `mismatchPercent`  | `number \| null`       | Differing pixels as a percentage of the normalized comparison canvas (larger width × larger height), or `null` when not compared |
 | `diffFilePath`     | `string \| null`       | Diff PNG output path, or `null` when the page was not compared      |
 | `actualPageName`   | `string \| null`       | Renderer-reported actual page image name                            |
 | `expectedPageName` | `string \| null`       | Renderer-reported expected page image name                          |
@@ -336,6 +395,38 @@ For untrusted environments, prefer binary inputs or set `ComparePdfOptions.allow
 ```typescript
 type ComparePdfPageStatus = 'matched' | 'mismatched' | 'missing-actual' | 'missing-expected';
 ```
+
+### `ComparePdfSummary`
+
+Document-level rollup on `ComparePdfDetailedResult.summary`, derived entirely from the per-page results.
+
+| Property             | Type     | Description                                                          |
+| -------------------- | -------- | ------------------------------------------------------------------- |
+| `totalPages`         | `number` | Number of planned page entries (equals `pages.length`)              |
+| `matchedPages`       | `number` | Pages within their applicable threshold                             |
+| `mismatchedPages`    | `number` | Pages that exceeded their applicable threshold                      |
+| `missingPages`       | `number` | Pages missing a counterpart (`missing-actual` or `missing-expected`) |
+| `maxMismatchPercent` | `number` | Largest per-page `mismatchPercent`; `0` when no page comparison ran |
+| `totalMismatchCount` | `number` | Sum of `mismatchCount` across compared pages                        |
+
+### `toJsonReport` / `toJUnitReport`
+
+Serialize a `ComparePdfDetailedResult` for CI artifacts and tooling. Both are pure functions
+exported from the package entry point.
+
+```typescript
+import { comparePdfDetailed, toJsonReport, toJUnitReport } from 'pdf-visual-compare';
+
+const result = await comparePdfDetailed('./actual.pdf', './expected.pdf');
+
+const json = toJsonReport(result); // pretty-printed JSON, round-trips via JSON.parse
+const junit = toJUnitReport(result); // JUnit XML: one <testcase> per page, <failure> for non-equal pages
+```
+
+| Function                | Returns  | Description                                                    |
+| ----------------------- | -------- | ------------------------------------------------------------- |
+| `toJsonReport(result)`  | `string` | Pretty-printed JSON of the full detailed result               |
+| `toJUnitReport(result)` | `string` | JUnit XML report; failures cover mismatched and missing pages |
 
 ### `PdfRenderOptions`
 
@@ -383,6 +474,7 @@ renderer's first write (CWE-59 / CWE-61 / CWE-367).
 | `excludedAreaColor` | `RgbColor`   | Fill colour applied to `excludedAreas` before comparison. When omitted, `png-visual-compare` uses its default blue `{ r: 0, g: 0, b: 255 }` |
 | `diffFilePath`      | `string`     | Override the diff image output path for this page; the resolved path must stay inside `diffsOutputFolder`                                   |
 | `matchingThreshold` | `number`     | Per-page pixel threshold, overrides the document-level `compareThreshold` for this page; must be a finite non-negative integer              |
+| `matchingThresholdPercent` | `number` | Per-page percentage threshold (0–100), overrides the document-level `compareThresholdPercent` for this page                            |
 
 `ExcludedPageArea` remains exported as a backwards-compatible alias of `PageExclusion`.
 
