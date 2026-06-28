@@ -39,11 +39,13 @@ export type ComparePdfPageResult = {
     mismatchCount: number | null;
 
     /**
-     * Percentage of differing pixels relative to the larger of the two rendered page areas,
-     * rounded to 4 decimal places (e.g. `0.07` means 0.07%).
+     * Percentage of differing pixels relative to the normalized comparison canvas — the larger
+     * width times the larger height of the two rendered pages — rounded to 4 decimal places
+     * (e.g. `0.07` means 0.07%). This matches the canvas the comparator extends both pages onto,
+     * so the value stays within `[0, 100]` even for differing page sizes or aspect ratios.
      * `null` means the page was not compared because one rendered counterpart was missing.
      * Reported as `0` in the degenerate case where the renderer returns a non-positive or
-     * non-finite page area, even if `mismatchCount` is non-zero.
+     * non-finite canvas area, even if `mismatchCount` is non-zero.
      */
     mismatchPercent: number | null;
 

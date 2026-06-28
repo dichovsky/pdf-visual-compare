@@ -20,10 +20,13 @@ const STATUS_TO_COUNTER = {
 /**
  * Computes the percentage of differing pixels for a compared page.
  *
- * The denominator is the larger of the two rendered page areas (`width * height`), which keeps
- * the result within `[0, 100]` even when the actual and expected pages render at different
- * dimensions. Returns `0` when the larger area is not a positive finite number (e.g. a renderer
- * reported zero or non-finite dimensions), avoiding `NaN`/`Infinity` leaking into results.
+ * The denominator is the area of the normalized comparison canvas —
+ * `max(actualWidth, expectedWidth) * max(actualHeight, expectedHeight)` — which is exactly the
+ * canvas `png-visual-compare` extends both pages onto before counting mismatches. This keeps the
+ * result within `[0, 100]` even when the pages differ in size or aspect ratio; the larger-area
+ * denominator would understate the canvas and could report more than 100%. Returns `0` when the
+ * canvas area is not a positive finite number (e.g. a renderer reported zero or non-finite
+ * dimensions), avoiding `NaN`/`Infinity` leaking into results.
  *
  * The value is rounded to 4 decimal places so the same number drives both the reported
  * `mismatchPercent` and any percentage threshold decision.
@@ -35,12 +38,12 @@ export function computeMismatchPercent(
     expectedWidth: number,
     expectedHeight: number,
 ): number {
-    const totalPixels = Math.max(actualWidth * actualHeight, expectedWidth * expectedHeight);
-    if (!Number.isFinite(totalPixels) || totalPixels <= 0) {
+    const canvasPixels = Math.max(actualWidth, expectedWidth) * Math.max(actualHeight, expectedHeight);
+    if (!Number.isFinite(canvasPixels) || canvasPixels <= 0) {
         return 0;
     }
 
-    return roundPercent((mismatchCount / totalPixels) * 100);
+    return roundPercent((mismatchCount / canvasPixels) * 100);
 }
 
 /**

@@ -385,7 +385,7 @@ For untrusted environments, prefer binary inputs or set `ComparePdfOptions.allow
 | `threshold`        | `number`               | Pixel threshold actually applied to this page                       |
 | `thresholdPercent` | `number \| null`       | Percentage threshold applied to this page, or `null` when unset     |
 | `mismatchCount`    | `number \| null`       | Comparator mismatch count, or `null` when the page was not compared |
-| `mismatchPercent`  | `number \| null`       | Differing pixels as a percentage of the page area, or `null` when not compared |
+| `mismatchPercent`  | `number \| null`       | Differing pixels as a percentage of the normalized comparison canvas (larger width × larger height), or `null` when not compared |
 | `diffFilePath`     | `string \| null`       | Diff PNG output path, or `null` when the page was not compared      |
 | `actualPageName`   | `string \| null`       | Renderer-reported actual page image name                            |
 | `expectedPageName` | `string \| null`       | Renderer-reported expected page image name                          |
