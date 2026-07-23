@@ -139,3 +139,58 @@ test(`escapeXml helpers escape special characters and strip illegal XML control 
     expect(escapeXmlText(`a${String.fromCharCode(0)}b${String.fromCharCode(8)}c`)).toBe('abc');
     expect(escapeXmlAttribute(`x${String.fromCharCode(31)}y`)).toBe('xy');
 });
+
+test(`escapeXmlText strips non-control code points forbidden by the full XML 1.0 Char production`, () => {
+    // U+FFFE / U+FFFF are explicitly excluded from XML 1.0's legal range (which stops at U+FFFD),
+    // even though they are not C0 control characters.
+    expect(escapeXmlText(`a${String.fromCharCode(0xfffe)}b${String.fromCharCode(0xffff)}c`)).toBe('abc');
+    // U+FFFD itself (the replacement character) is the legal boundary and must survive.
+    expect(escapeXmlText(`a${String.fromCharCode(0xfffd)}b`)).toBe(`a${String.fromCharCode(0xfffd)}b`);
+    // A lone (unpaired) high surrogate, and a lone (unpaired) low surrogate, do not correspond to
+    // any valid Unicode scalar value and must be stripped.
+    expect(escapeXmlText(`a${String.fromCharCode(0xd800)}b`)).toBe('ab');
+    expect(escapeXmlText(`a${String.fromCharCode(0xdc00)}b`)).toBe('ab');
+    // A valid surrogate pair (an astral character, e.g. an emoji) must NOT be stripped: it
+    // legitimately encodes a code point in the legal U+10000-U+10FFFF range.
+    expect(escapeXmlText(`a😀b`)).toBe('a😀b');
+});
+
+test(`escapeXmlAttribute strips the same XML 1.0 Char violations as escapeXmlText`, () => {
+    // Verified directly rather than only inferred via delegation to escapeXmlText, since
+    // escapeXmlAttribute is what callers actually use for page names embedded in attributes.
+    expect(escapeXmlAttribute(`a${String.fromCharCode(0xfffe)}"b`)).toBe('a&quot;b');
+    expect(escapeXmlAttribute(`a${String.fromCharCode(0xd800)}"b`)).toBe('a&quot;b');
+    expect(escapeXmlAttribute(`a😀"b`)).toBe('a😀&quot;b');
+});
+
+test(`strips a lone surrogate immediately adjacent to a valid pair with no separator`, () => {
+    // The trickiest case for the lookahead/lookbehind logic: a lone surrogate directly touching
+    // a valid pair, with no character in between to disambiguate the boundary.
+    expect(escapeXmlText(`${String.fromCharCode(0xd800)}😀`)).toBe('😀');
+    expect(escapeXmlText(`😀${String.fromCharCode(0xdc00)}`)).toBe('😀');
+});
+
+test(`illegal-code-point stripping composes correctly with entity escaping in the same string`, () => {
+    expect(escapeXmlText(`a${String.fromCharCode(0xffff)}&b<c>d`)).toBe('a&amp;b&lt;c&gt;d');
+});
+
+test(`toJUnitReport strips an illegal code point from a caller-controlled page name`, () => {
+    const xml = toJUnitReport(
+        resultWith([
+            page({
+                pageNumber: 1,
+                status: 'mismatched',
+                isEqual: false,
+                mismatchCount: 1,
+                mismatchPercent: 0.01,
+                threshold: 0,
+                thresholdPercent: null,
+                actualPageName: `weird${String.fromCharCode(0xffff)}name.png`,
+                expectedPageName: 'e1.png',
+            }),
+        ]),
+    );
+
+    expect(xml).toContain('actual=weirdname.png');
+    expect(xml).not.toContain(String.fromCharCode(0xffff));
+});
