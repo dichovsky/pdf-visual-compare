@@ -27,12 +27,24 @@ test(`should return structured page results with thresholds, mismatches, and dif
 
     pdfToPngMock
         .mockResolvedValueOnce([
-            { name: 'actual-page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') },
-            { name: 'actual-page-2.png', pageNumber: 2, content: Buffer.from('actual-page-2') },
+            { name: 'actual-page-1.png', pageNumber: 1, width: 100, height: 100, content: Buffer.from('actual-page-1') },
+            { name: 'actual-page-2.png', pageNumber: 2, width: 100, height: 100, content: Buffer.from('actual-page-2') },
         ])
         .mockResolvedValueOnce([
-            { name: 'expected-page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') },
-            { name: 'expected-page-2.png', pageNumber: 2, content: Buffer.from('expected-page-2') },
+            {
+                name: 'expected-page-1.png',
+                pageNumber: 1,
+                width: 100,
+                height: 100,
+                content: Buffer.from('expected-page-1'),
+            },
+            {
+                name: 'expected-page-2.png',
+                pageNumber: 2,
+                width: 100,
+                height: 100,
+                content: Buffer.from('expected-page-2'),
+            },
         ]);
     comparePngMock.mockReturnValueOnce(0).mockReturnValueOnce(7);
 
@@ -54,6 +66,7 @@ test(`should return structured page results with thresholds, mismatches, and dif
         actualPageCount: 2,
         expectedPageCount: 2,
         compareThreshold: 5,
+        compareThresholdPercent: null,
         writeDiffs: true,
         diffsOutputFolder,
         pages: [
@@ -62,7 +75,9 @@ test(`should return structured page results with thresholds, mismatches, and dif
                 status: 'matched',
                 isEqual: true,
                 threshold: 5,
+                thresholdPercent: null,
                 mismatchCount: 0,
+                mismatchPercent: 0,
                 diffFilePath: resolve(diffsOutputFolder, 'diff_actual-page-1.png'),
                 actualPageName: 'actual-page-1.png',
                 expectedPageName: 'expected-page-1.png',
@@ -72,12 +87,22 @@ test(`should return structured page results with thresholds, mismatches, and dif
                 status: 'matched',
                 isEqual: true,
                 threshold: 10,
+                thresholdPercent: null,
                 mismatchCount: 7,
+                mismatchPercent: 0.07,
                 diffFilePath: pageTwoDiffFilePath,
                 actualPageName: 'actual-page-2.png',
                 expectedPageName: 'expected-page-2.png',
             },
         ],
+        summary: {
+            totalPages: 2,
+            matchedPages: 2,
+            mismatchedPages: 0,
+            missingPages: 0,
+            maxMismatchPercent: 0.07,
+            totalMismatchCount: 7,
+        },
     });
 });
 
@@ -91,6 +116,7 @@ test(`should report missing expected pages without invoking the PNG comparator`,
         actualPageCount: 1,
         expectedPageCount: 0,
         compareThreshold: 0,
+        compareThresholdPercent: null,
         writeDiffs: false,
         diffsOutputFolder: null,
         pages: [
@@ -99,12 +125,22 @@ test(`should report missing expected pages without invoking the PNG comparator`,
                 status: 'missing-expected',
                 isEqual: false,
                 threshold: 0,
+                thresholdPercent: null,
                 mismatchCount: null,
+                mismatchPercent: null,
                 diffFilePath: null,
                 actualPageName: 'actual-page-2.png',
                 expectedPageName: null,
             },
         ],
+        summary: {
+            totalPages: 1,
+            matchedPages: 0,
+            mismatchedPages: 0,
+            missingPages: 1,
+            maxMismatchPercent: 0,
+            totalMismatchCount: 0,
+        },
     });
 
     expect(comparePngMock).not.toHaveBeenCalled();
@@ -122,6 +158,7 @@ test(`should report missing actual pages deterministically`, async () => {
         actualPageCount: 0,
         expectedPageCount: 1,
         compareThreshold: 0,
+        compareThresholdPercent: null,
         writeDiffs: false,
         diffsOutputFolder: null,
         pages: [
@@ -130,12 +167,22 @@ test(`should report missing actual pages deterministically`, async () => {
                 status: 'missing-actual',
                 isEqual: false,
                 threshold: 0,
+                thresholdPercent: null,
                 mismatchCount: null,
+                mismatchPercent: null,
                 diffFilePath: null,
                 actualPageName: null,
                 expectedPageName: 'expected-page-4.png',
             },
         ],
+        summary: {
+            totalPages: 1,
+            matchedPages: 0,
+            mismatchedPages: 0,
+            missingPages: 1,
+            maxMismatchPercent: 0,
+            totalMismatchCount: 0,
+        },
     });
 });
 
@@ -157,6 +204,7 @@ test(`should order selected subset pages by pageNumber and surface missing count
         actualPageCount: 1,
         expectedPageCount: 1,
         compareThreshold: 0,
+        compareThresholdPercent: null,
         writeDiffs: false,
         diffsOutputFolder: null,
         pages: [
@@ -165,7 +213,9 @@ test(`should order selected subset pages by pageNumber and surface missing count
                 status: 'missing-actual',
                 isEqual: false,
                 threshold: 0,
+                thresholdPercent: null,
                 mismatchCount: null,
+                mismatchPercent: null,
                 diffFilePath: null,
                 actualPageName: null,
                 expectedPageName: 'expected-page-2.png',
@@ -175,12 +225,22 @@ test(`should order selected subset pages by pageNumber and surface missing count
                 status: 'missing-expected',
                 isEqual: false,
                 threshold: 0,
+                thresholdPercent: null,
                 mismatchCount: null,
+                mismatchPercent: null,
                 diffFilePath: null,
                 actualPageName: 'actual-page-4.png',
                 expectedPageName: null,
             },
         ],
+        summary: {
+            totalPages: 2,
+            matchedPages: 0,
+            mismatchedPages: 0,
+            missingPages: 2,
+            maxMismatchPercent: 0,
+            totalMismatchCount: 0,
+        },
     });
 
     expect(comparePngMock).not.toHaveBeenCalled();

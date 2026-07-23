@@ -48,4 +48,12 @@ export type PageExclusion = {
      * When omitted, the document-level `compareThreshold` applies.
      */
     matchingThreshold?: number;
+
+    /**
+     * Per-page percentage threshold that overrides the document-level `compareThresholdPercent`
+     * for this page only. Must be a finite number in the range 0–100. When omitted, the
+     * document-level `compareThresholdPercent` applies (and percentage tolerance stays disabled
+     * if neither is set).
+     */
+    matchingThresholdPercent?: number;
 };

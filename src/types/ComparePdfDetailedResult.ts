@@ -1,4 +1,5 @@
 import type { ComparePdfPageResult } from './ComparePdfPageResult.js';
+import type { ComparePdfSummary } from './ComparePdfSummary.js';
 
 /**
  * Structured document-level comparison result returned by `comparePdfDetailed()`.
@@ -20,9 +21,14 @@ export type ComparePdfDetailedResult = {
     expectedPageCount: number;
 
     /**
-     * Document-level threshold supplied to the comparison.
+     * Document-level pixel-count threshold supplied to the comparison.
      */
     compareThreshold: number;
+
+    /**
+     * Document-level percentage threshold supplied to the comparison, or `null` when none was set.
+     */
+    compareThresholdPercent: number | null;
 
     /**
      * `true` when diff PNG files were written for compared pages.
@@ -39,4 +45,10 @@ export type ComparePdfDetailedResult = {
      * Page-level results sorted by `pageNumber`.
      */
     pages: ComparePdfPageResult[];
+
+    /**
+     * Document-level rollup derived from `pages` (counts by status, max change percentage,
+     * and total mismatched pixels).
+     */
+    summary: ComparePdfSummary;
 };

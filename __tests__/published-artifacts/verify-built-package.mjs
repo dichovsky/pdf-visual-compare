@@ -14,6 +14,8 @@ const artifactResultsDir = path.join(rootDir, 'test-results', 'published-artifac
 function assertExportSurface(pkg) {
     assert.equal(typeof pkg.comparePdf, 'function');
     assert.equal(typeof pkg.comparePdfDetailed, 'function');
+    assert.equal(typeof pkg.toJsonReport, 'function');
+    assert.equal(typeof pkg.toJUnitReport, 'function');
     assert.equal(typeof pkg.ComparePdfError, 'function');
     assert.equal(typeof pkg.ComparePdfComparisonError, 'function');
     assert.equal(typeof pkg.ComparePdfConfigurationError, 'function');
@@ -36,10 +38,19 @@ function assertPackedArtifactContents() {
         'out/index.js',
         'out/index.d.ts',
         'out/comparePdf.js',
+        'out/cli.js',
         'out/types/PdfInput.d.ts',
     ]) {
         assert.ok(packedPaths.has(requiredPath), `Expected npm pack output to include ${requiredPath}.`);
     }
+}
+
+function assertBinShim() {
+    const manifest = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
+    assert.equal(manifest.bin?.['pdf-visual-compare'], './out/cli.js', 'Expected package.json bin to map to ./out/cli.js.');
+
+    const cliSource = readFileSync(path.join(rootDir, 'out', 'cli.js'), 'utf8');
+    assert.ok(cliSource.startsWith('#!/usr/bin/env node'), 'Expected built out/cli.js to start with a node shebang.');
 }
 
 async function main() {
@@ -67,6 +78,7 @@ async function main() {
     assert.equal(detailedResult.expectedPageCount, 2);
 
     assertPackedArtifactContents();
+    assertBinShim();
 }
 
 main().catch((error) => {

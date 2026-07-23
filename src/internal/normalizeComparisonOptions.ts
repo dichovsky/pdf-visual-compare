@@ -2,6 +2,7 @@ import { toComparePngOptions } from './adapters/comparePngOptions.js';
 import { toPdfToPngOptions } from './adapters/pdfRenderOptions.js';
 import { validateDiffsOutputFolder } from './diffOutputGuards.js';
 import { validateAllowedInputRoot } from './normalizePdfInput.js';
+import { parsePageSelection } from './parsePageRange.js';
 import { validateRenderOutputFolder } from './renderOutputFolderGuards.js';
 import { ComparePdfConfigurationError } from '../errors/ComparePdfConfigurationError.js';
 import type { ComparePdfOptions } from '../types/ComparePdfOptions.js';
@@ -33,12 +34,17 @@ export function normalizeComparisonOptions(opts: unknown): NormalizedComparePdfO
     const writeDiffs = compareOptions.writeDiffs ?? false;
     const diffsOutputFolder = validateDiffsOutputFolder(compareOptions.diffsOutputFolder);
     const compareThreshold: number = compareOptions.compareThreshold ?? 0;
+    const compareThresholdPercent = compareOptions.compareThresholdPercent;
     const excludedAreas: readonly PageExclusion[] = validateExcludedAreas(compareOptions.excludedAreas);
+    const selectedPageNumbers =
+        compareOptions.pages === undefined ? undefined : new Set(parsePageSelection(compareOptions.pages));
 
     validateThreshold(compareThreshold, 'Compare Threshold');
+    validatePercentThreshold(compareThresholdPercent, 'Compare Threshold Percent');
     for (const pageExclusion of excludedAreas) {
         validatePageNumber(pageExclusion.pageNumber);
         validateThreshold(pageExclusion.matchingThreshold, 'Matching Threshold');
+        validatePercentThreshold(pageExclusion.matchingThresholdPercent, 'Matching Threshold Percent');
         if (pageExclusion.diffFilePath !== undefined) {
             validateDiffFilePath(pageExclusion.diffFilePath);
         }
@@ -50,9 +56,11 @@ export function normalizeComparisonOptions(opts: unknown): NormalizedComparePdfO
     return {
         allowedInputRoot,
         compareThreshold,
+        compareThresholdPercent,
         diffsOutputFolder,
         excludedAreas,
         pdfToPngConvertOpts,
+        selectedPageNumbers,
         writeDiffs,
     };
 }
@@ -64,6 +72,19 @@ function validateThreshold(value: number | undefined, thresholdName: 'Compare Th
 
     if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
         throw new ComparePdfConfigurationError(`${thresholdName} must be a finite non-negative integer.`);
+    }
+}
+
+function validatePercentThreshold(
+    value: number | undefined,
+    thresholdName: 'Compare Threshold Percent' | 'Matching Threshold Percent',
+): void {
+    if (value === undefined) {
+        return;
+    }
+
+    if (!Number.isFinite(value) || value < 0 || value > 100) {
+        throw new ComparePdfConfigurationError(`${thresholdName} must be a finite number between 0 and 100.`);
     }
 }
 

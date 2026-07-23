@@ -55,4 +55,30 @@ export type ComparePdfOptions = {
      * @throws {ComparePdfConfigurationError} When set to a negative, fractional, infinite, or `NaN` value.
      */
     compareThreshold?: number;
+
+    /**
+     * Optional maximum percentage of differing pixels (relative to the rendered page area)
+     * allowed before a page is considered a failure. A page passes when it stays within EITHER
+     * `compareThreshold` (pixel count) OR this percentage threshold — the two criteria are
+     * alternative, not cumulative, so configuring a percentage relaxes, never tightens, the
+     * pixel-count default.
+     *
+     * Must be a finite number in the range 0–100. When omitted, only the pixel-count threshold
+     * applies.
+     * @throws {ComparePdfConfigurationError} When set outside 0–100, infinite, or `NaN`.
+     */
+    compareThresholdPercent?: number;
+
+    /**
+     * Restricts the comparison to a subset of pages. Accepts a comma-separated range spec
+     * (e.g. `"1-3,5,7"`) or an explicit array of 1-based page numbers (e.g. `[1, 2, 3, 5, 7]`).
+     *
+     * When omitted, every rendered page is compared. A selected page present in only one PDF is
+     * reported as a missing counterpart; selected pages that exist in neither PDF are ignored as
+     * long as the selection still matches at least one rendered page. If the selection matches no
+     * rendered page in either PDF, the comparison throws rather than silently passing.
+     * @throws {ComparePdfConfigurationError} When the selection is malformed, selects no page, or
+     * matches no rendered page in either PDF.
+     */
+    pages?: string | readonly number[];
 };
