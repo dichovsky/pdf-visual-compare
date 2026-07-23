@@ -18,7 +18,7 @@ const STATUS_TO_COUNTER = {
 } as const satisfies Record<ComparePdfPageStatus, 'matchedPages' | 'mismatchedPages' | 'missingPages'>;
 
 /**
- * Computes the percentage of differing pixels for a compared page.
+ * Computes the unrounded percentage of differing pixels for a compared page.
  *
  * The denominator is the area of the normalized comparison canvas —
  * `max(actualWidth, expectedWidth) * max(actualHeight, expectedHeight)` — which is exactly the
@@ -28,10 +28,15 @@ const STATUS_TO_COUNTER = {
  * canvas area is not a positive finite number (e.g. a renderer reported zero or non-finite
  * dimensions), avoiding `NaN`/`Infinity` leaking into results.
  *
- * The value is rounded to 4 decimal places so the same number drives both the reported
- * `mismatchPercent` and any percentage threshold decision.
+ * Percentage threshold decisions must use this unrounded value, not {@link computeMismatchPercent}:
+ * rounding first can turn a real mismatch into an exact 0% match (e.g. 1 differing pixel on a
+ * 5000x5000 canvas is 0.000004%, which rounds to 0.0000 and would incorrectly pass a
+ * `compareThresholdPercent: 0` configuration).
+ *
+ * Named "Percent" rather than "Ratio": the return value is already on the 0–100 scale (directly
+ * comparable to a `compareThresholdPercent`/`matchingThresholdPercent` input), not a 0–1 fraction.
  */
-export function computeMismatchPercent(
+export function computeUnroundedMismatchPercent(
     mismatchCount: number,
     actualWidth: number,
     actualHeight: number,
@@ -43,7 +48,24 @@ export function computeMismatchPercent(
         return 0;
     }
 
-    return roundPercent((mismatchCount / canvasPixels) * 100);
+    return (mismatchCount / canvasPixels) * 100;
+}
+
+/**
+ * Computes the percentage of differing pixels for a compared page, rounded to 4 decimal places
+ * for reporting as the public `mismatchPercent` value. Threshold decisions must use
+ * {@link computeUnroundedMismatchPercent} instead — see its doc comment for why.
+ */
+export function computeMismatchPercent(
+    mismatchCount: number,
+    actualWidth: number,
+    actualHeight: number,
+    expectedWidth: number,
+    expectedHeight: number,
+): number {
+    return roundPercent(
+        computeUnroundedMismatchPercent(mismatchCount, actualWidth, actualHeight, expectedWidth, expectedHeight),
+    );
 }
 
 /**

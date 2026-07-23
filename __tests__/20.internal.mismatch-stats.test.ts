@@ -1,5 +1,9 @@
 import { expect, test } from 'vitest';
-import { computeMismatchPercent, summarizePageResults } from '../src/internal/mismatchStats.js';
+import {
+    computeMismatchPercent,
+    computeUnroundedMismatchPercent,
+    summarizePageResults,
+} from '../src/internal/mismatchStats.js';
 import type { ComparePdfPageResult } from '../src/types/ComparePdfPageResult.js';
 
 function pageResult(overrides: Partial<ComparePdfPageResult>): ComparePdfPageResult {
@@ -38,6 +42,27 @@ test(`computeMismatchPercent returns 0 for zero or non-finite dimensions`, () =>
     expect(computeMismatchPercent(5, 0, 0, 0, 0)).toBe(0);
     expect(computeMismatchPercent(5, Number.NaN, 10, 10, 10)).toBe(0);
     expect(computeMismatchPercent(5, 10, 10, Number.POSITIVE_INFINITY, 10)).toBe(0);
+});
+
+test(`computeUnroundedMismatchPercent preserves the value that computeMismatchPercent rounds away`, () => {
+    // 1 differing pixel on a 5000x5000 canvas is 0.000004%, which computeMismatchPercent rounds
+    // to 0.0000 for reporting. Threshold decisions must use the unrounded value instead, or a
+    // real (nonzero) mismatch would incorrectly pass a strict compareThresholdPercent: 0 config.
+    expect(computeUnroundedMismatchPercent(1, 5000, 5000, 5000, 5000)).toBeCloseTo(0.000004, 10);
+    expect(computeMismatchPercent(1, 5000, 5000, 5000, 5000)).toBe(0);
+});
+
+test(`computeUnroundedMismatchPercent divides by the normalized comparison canvas, unrounded`, () => {
+    // Unlike computeMismatchPercent, the value is not rounded, so binary floating-point division
+    // noise (e.g. 7/10000*100 = 0.06999999999999999) is asserted with toBeCloseTo, not toBe.
+    expect(computeUnroundedMismatchPercent(7, 100, 100, 100, 100)).toBeCloseTo(0.07, 10);
+    expect(computeUnroundedMismatchPercent(199, 100, 1, 1, 100)).toBeCloseTo(1.99, 10);
+});
+
+test(`computeUnroundedMismatchPercent returns 0 for zero or non-finite dimensions`, () => {
+    expect(computeUnroundedMismatchPercent(5, 0, 0, 0, 0)).toBe(0);
+    expect(computeUnroundedMismatchPercent(5, Number.NaN, 10, 10, 10)).toBe(0);
+    expect(computeUnroundedMismatchPercent(5, 10, 10, Number.POSITIVE_INFINITY, 10)).toBe(0);
 });
 
 test(`summarizePageResults rolls up counts, max percent, and total mismatch`, () => {
