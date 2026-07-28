@@ -21,6 +21,25 @@ cd pdf-visual-compare
 npm ci
 ```
 
+## TypeScript toolchain
+
+This repository uses two TypeScript packages side by side, installed under npm
+aliases:
+
+- `@typescript/native` is `typescript@7`. It compiles `npm run build` and
+  `npm run test:types`, which invoke it by full path
+  (`node ./node_modules/@typescript/native/bin/tsc`) so the compiler in use
+  never depends on install history.
+- `typescript` is `@typescript/typescript6`, which provides the TypeScript 6
+  compiler API. `typescript-eslint` and `scripts/generate-codemap.ts` both need
+  that API, and TypeScript 7 no longer exposes it.
+
+After `npm ci`, `node_modules/.bin/tsc` is TypeScript 7 and
+`node_modules/.bin/tsc6` is TypeScript 6. A globally installed `tsc` is neither,
+so prefer the repository scripts. Do not replace either alias with a plain
+`typescript` dependency — that breaks linting and codemap generation. See
+[docs/TYPESCRIPT_7_MIGRATION.md](docs/TYPESCRIPT_7_MIGRATION.md).
+
 ## Project layout
 
 - `src/` — library source

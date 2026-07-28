@@ -19,6 +19,8 @@ node ./out/cli.js a.pdf b.pdf  # Run the built CLI (published entry point: `npx 
 
 Tests have a 90-second timeout (`vitest.config.mjs`) because PDF-to-PNG conversion is slow. Coverage thresholds are enforced (100% statements/lines/functions, 90% branches).
 
+**Toolchain is split on purpose — do not "correct" the aliases.** `build` and `test:types` invoke the TypeScript 7 native compiler by full path (`node ./node_modules/@typescript/native/bin/tsc`), where `@typescript/native` is an npm alias for `typescript@7`. The `typescript` devDependency is itself an alias for `@typescript/typescript6`, because TypeScript 7 removed the legacy JavaScript compiler API that `scripts/generate-codemap.ts` (`createProgram` + TypeChecker) and `typescript-eslint` (peer range `<6.1.0`) still need. Replacing either alias with a plain `typescript` dependency breaks codemap generation and linting. In `node_modules/.bin`, `tsc` is TypeScript 7 and `tsc6` is TypeScript 6. See `docs/TYPESCRIPT_7_MIGRATION.md`.
+
 ## Architecture
 
 This is a small TypeScript library published to npm. Source lives in `src/`, compiled output goes to `out/` (the published artifact).

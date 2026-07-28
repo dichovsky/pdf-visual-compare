@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `toJsonReport(result)` and `toJUnitReport(result)` — serialize a `ComparePdfDetailedResult` to pretty JSON or a JUnit XML report (one `<testcase>` per page). Both are exported from the package entry point.
 - New exported type `ComparePdfSummary`.
 
+### Changed
+
+- Build toolchain: the published `out/` artifact and repository type checks are now produced by the TypeScript 7 native compiler instead of TypeScript 6. Emitted JavaScript and declaration files are byte-identical under both compilers, so there is no change to the published API, runtime behavior, or supported Node.js versions. TypeScript remains a development dependency only. See [docs/TYPESCRIPT_7_MIGRATION.md](docs/TYPESCRIPT_7_MIGRATION.md).
+
 ## [4.0.0] - 2026-06-19
 
 First 4.x release — a major release with breaking changes to the supported Node.js runtime, supported platforms, and public type surface, alongside a substantially expanded API. All changes below are relative to the last published release, 3.5.0.
