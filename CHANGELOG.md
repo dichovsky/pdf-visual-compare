@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-07-30
+
 ### Added
 
 - **CLI** — `pdf-visual-compare <actual.pdf> <expected.pdf> [options]` (run via `npx pdf-visual-compare`). Options: `-t/--threshold`, `--threshold-percent`, `-p/--pages`, `-f/--format <text|json|junit>`, `-o/--out`, `--fail-on-diff`, `-h/--help`, `-v/--version`. Exit codes: `0` success, `1` differences found with `--fail-on-diff`, `2` usage or runtime error.
@@ -20,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Upgraded runtime dependencies: `pdf-to-png-converter` `~4.1.1` → `~4.2.0` and `png-visual-compare` `~6.2.0` → `~6.3.0`. No change to this package's public API or to the supported Node.js range (`>=24`).
 - Build toolchain: the published `out/` artifact and repository type checks are now produced by the TypeScript 7 native compiler instead of TypeScript 6. Emitted JavaScript and declaration files are byte-identical under both compilers, so there is no change to the published API, runtime behavior, or supported Node.js versions. TypeScript remains a development dependency only. See [docs/TYPESCRIPT_7_MIGRATION.md](docs/TYPESCRIPT_7_MIGRATION.md).
 
 ## [4.0.0] - 2026-06-19

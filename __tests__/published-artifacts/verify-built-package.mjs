@@ -23,12 +23,24 @@ function assertExportSurface(pkg) {
     assert.equal(typeof pkg.ComparePdfRenderingError, 'function');
 }
 
+// npm <= 11 prints an array of pack results; npm >= 12 prints an object keyed by package name.
+function readPackResults(packOutput) {
+    const parsed = JSON.parse(packOutput);
+    const results = Array.isArray(parsed) ? parsed : Object.values(parsed);
+    const [packResult] = results;
+    assert.ok(
+        Array.isArray(packResult?.files),
+        'Expected npm pack --dry-run --json output to expose a packed file list.',
+    );
+    return packResult;
+}
+
 function assertPackedArtifactContents() {
     const packOutput = execFileSync('npm', ['pack', '--dry-run', '--json'], {
         cwd: rootDir,
         encoding: 'utf8',
     });
-    const [packResult] = JSON.parse(packOutput);
+    const packResult = readPackResults(packOutput);
     const packedPaths = new Set(packResult.files.map((file) => file.path));
 
     for (const requiredPath of [
