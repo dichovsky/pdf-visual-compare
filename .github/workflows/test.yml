@@ -14,19 +14,7 @@ concurrency:
 
 jobs:
     test:
-        strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-24.04, macos-15]
-                npm: [bundled]
-                # publish.yml upgrades to npm@latest before prepublishOnly, so npm-version
-                # regressions in the release tooling are invisible to the bundled-npm legs
-                # and would otherwise only surface during a release. One Linux leg is enough
-                # to catch them; the sensitivity is to the npm version, not the OS.
-                include:
-                    - os: ubuntu-24.04
-                      npm: latest
-        runs-on: ${{ matrix.os }}
+        runs-on: ubuntu-24.04
         timeout-minutes: 30
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,8 +23,10 @@ jobs:
               with:
                   node-version-file: .nvmrc
                   cache: 'npm'
+            # publish.yml upgrades to npm@latest before prepublishOnly. Matching it here keeps
+            # CI on the same npm as a real release, so npm-version regressions in the release
+            # tooling fail in CI instead of only surfacing during a publish.
             - name: Upgrade npm to latest
-              if: matrix.npm == 'latest'
               run: npm install -g npm@latest
             - name: Report npm version
               run: npm --version
