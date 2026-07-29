@@ -143,7 +143,8 @@ GitHub Actions runs on pushes and pull requests.
 
 Current CI behavior:
 
-- `test.yml` runs on `ubuntu-24.04` and `macos-15`
+- `test.yml` runs a single job on `ubuntu-24.04`
+- CI upgrades to `npm@latest` before installing, matching what `publish.yml` does before `prepublishOnly`, so npm-version regressions in the release tooling fail in CI rather than only during a publish
 - CI installs dependencies with `npm ci`
 - CI runs `npm run lint`
 - CI runs `npm run test:license`
@@ -155,14 +156,15 @@ Because `npm test` already includes build, consumer type verification, artifact 
 
 Pull requests targeting `main` must pass these required GitHub status checks before merge:
 
-- `test (ubuntu-24.04)`
-- `test (macos-15)`
+- `test`
 
-These are the exact matrix job check names produced by the `CI` workflow in `.github/workflows/test.yml`.
+This is the exact job check name produced by the `CI` workflow in `.github/workflows/test.yml`.
 The release-only `Publish Package` workflow is not part of the merge gate for `main`.
 
-If the CI workflow job names or matrix values change, update this document and the `main` branch
-protection required-check list together so the documented policy matches repository settings.
+If the CI workflow job names change, update this document and the `main` branch protection
+required-check list together so the documented policy matches repository settings. Note that adding a
+matrix to the job renames its check (a matrix job reports as `test (<values>)`, not `test`), which
+silently blocks every pull request until the required-check list is updated to match.
 
 ## Release expectations
 

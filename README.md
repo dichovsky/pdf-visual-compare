@@ -51,7 +51,7 @@
 ## Requirements
 
 - Node.js >= 24
-- Supported and CI-validated runtimes: Linux and macOS
+- Supported runtimes: Linux and macOS. CI validates Linux only; macOS is supported but not covered by automated runs
 - Windows is not supported
 
 ## Docker
@@ -86,10 +86,9 @@ so it still expects `./out/` to be up to date. `npm test` handles that automatic
 
 For pull requests targeting `main`, the required GitHub status checks are:
 
-- `test (ubuntu-24.04)`
-- `test (macos-15)`
+- `test`
 
-Those check names come from the matrix jobs in the `CI` workflow (`.github/workflows/test.yml`).
+That check name comes from the job in the `CI` workflow (`.github/workflows/test.yml`).
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor workflow and merge expectations.
 
 ---

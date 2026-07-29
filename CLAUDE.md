@@ -81,3 +81,27 @@ Rule:
 ```
 
 Store project-specific mistakes in this `CLAUDE.md` file under this section; keep generalizable rules in global memory. Do not rely on an uncommitted `.claude/memory` path.
+
+```text
+Ctx: Investigating stale devDeps at HEAD before the 4.1.0 release
+Err: Claimed the TypeScript 7 merge reverted the dependabot bumps
+Cause: Assumed package.json changed; in-range dependabot bumps touch only package-lock.json
+Fix: Diffed the merge parents - package.json was identical on both sides
+Rule: Before calling a dep bump reverted, check whether it was in-range (lock-only)
+```
+
+```text
+Ctx: Formatting the npm 12 artifact fix
+Err: prettier --write reformatted an unrelated pre-existing line in the same file
+Cause: Ran the formatter without knowing the file's baseline was already prettier-dirty
+Fix: Reverted the adjacent hunk; confirmed parity against the stashed HEAD version
+Rule: Check prettier on the HEAD version before --write, so incidental reformats stay out of the diff
+```
+
+```text
+Ctx: Release commit for 4.1.0
+Err: codemap:check went stale right after passing, with no source change
+Cause: CODEMAP.md embeds repo.version, so any version bump invalidates it
+Fix: Ran npm run codemap in the release commit; sourceHash unchanged proved the API surface held
+Rule: Always regenerate CODEMAP.md in a version-bump commit
+```
