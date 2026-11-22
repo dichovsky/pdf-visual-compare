@@ -15,7 +15,7 @@ export type PdfRenderOptions = {
     viewportScale?: number;
 
     /**
-     * When `true`, the renderer does not load embedded fonts. It uses built-in fonts.
+     * When `true`, PDF.js uses its built-in font renderer to draw glyphs as paths.
      */
     disableFontFace?: boolean;
 

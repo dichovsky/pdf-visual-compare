@@ -73,11 +73,12 @@ npm run test:docker    # Build Docker image and run tests in the container
 
 1. `npm run clean`
 2. `npm run lint`
-3. `npm run test:license`
-4. `npm run build`
-5. `npm run test:types`
-6. `npm run test:artifacts`
-7. `vitest run --coverage`
+3. `npm run codemap:check`
+4. `npm run test:license`
+5. `npm run build`
+6. `npm run test:types`
+7. `npm run test:artifacts`
+8. `vitest run --coverage`
 
 If you run only one command before you open a pull request, run `npm test`.
 

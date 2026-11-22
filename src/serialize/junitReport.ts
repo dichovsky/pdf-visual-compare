@@ -7,7 +7,7 @@ const SUITE_NAME = 'pdf-visual-compare';
 /**
  * Serializes a {@link ComparePdfDetailedResult} as a JUnit XML test report.
  *
- * The report has one `<testcase>` for each compared page. It has a `<failure>` for each page
+ * The report has one `<testcase>` for each planned page. It has a `<failure>` for each page
  * that is not equal: a mismatched page or a page without a counterpart. The output has no
  * timestamps. Thus, the output is the same for the same result, in snapshots and in CI diffs.
  * The function escapes the XML special characters in the page names that callers control.

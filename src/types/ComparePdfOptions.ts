@@ -51,9 +51,8 @@ export type ComparePdfOptions = {
     excludedAreas?: readonly PageExclusion[];
 
     /**
-     * The pixel threshold: the maximum number of different pixels on an equal page.
-     * A value of `0` makes a pixel-perfect match necessary. The value must be a finite
-     * non-negative integer.
+     * Number of different pixels that the pixel threshold permits. Use a finite non-negative integer.
+     * If the count exceeds this value, the page can still meet the percentage threshold.
      * @default 0
      * @throws {ComparePdfConfigurationError} When set to a negative, fractional, infinite, or `NaN` value.
      */

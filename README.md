@@ -77,7 +77,7 @@ Node.js 24 or later.
 ```sh
 npm run test:types      # Type-check all repository TypeScript, including the published-surface fixture
 npm run test:artifacts  # Verify the built package entry points and npm pack contents
-npm test                # Full pipeline: clean → lint → license check → build → type/artifact checks → vitest --coverage
+npm test                # Full pipeline: clean → lint → codemap check → license check → build → type/artifact checks → vitest --coverage
 ```
 
 `npm run test:types` includes the published-surface fixture in `__tests__/published-artifacts/`.
@@ -140,8 +140,8 @@ const options: ComparePdfOptions = {
     // must resolve to a path in this folder. If not, comparePdf throws ComparePdfConfigurationError.
     allowedInputRoot: '.',
 
-    // Pixel threshold: the maximum number of different pixels on an equal page.
-    // 0 = a pixel-perfect match is necessary (default). Must be a finite non-negative integer.
+    // The pixel threshold permits this many different pixels. The default is 0.
+    // Use a finite non-negative integer.
     compareThreshold: 200,
 
     // Optional percentage threshold (0–100). The comparison uses it TOGETHER WITH compareThreshold.
@@ -365,7 +365,7 @@ set `ComparePdfOptions.allowedInputRoot`.
 | `writeDiffs`              | `boolean`            | `false`              | Enables diff image writing to disk                                                                                                                                   |
 | `diffsOutputFolder`       | `string`             | `./comparePdfOutput` | Trusted diff output folder. The library validates it when you set it. The library writes diff images to it only when `writeDiffs` is `true`                          |
 | `allowedInputRoot`        | `string`             | `undefined`          | Optional input root. String PDF inputs must resolve to paths in this folder. When omitted, string paths are trusted inputs that the caller controls                  |
-| `compareThreshold`        | `number`             | `0`                  | Pixel threshold: the maximum number of different pixels on an equal page. Must be a finite non-negative integer                                                      |
+| `compareThreshold`        | `number`             | `0`                  | Number of different pixels that the pixel threshold permits. Must be a finite non-negative integer                                                                   |
 | `compareThresholdPercent` | `number`             | `undefined`          | Optional percentage threshold (0–100). The library uses it together with `compareThreshold`. A page is equal when it is in EITHER threshold                          |
 | `pages`                   | `string \| number[]` | `undefined`          | Selects the pages to compare (for example, `"1-3,5,7"` or `[1, 2, 3]`). A selection that contains no rendered page causes an error                                   |
 | `excludedAreas`           | `PageExclusion[]`    | `[]`                 | Page exclusions for each rendered `pageNumber` (1-based). The library ignores entries for pages that are not rendered. For a duplicate page, the first entry applies |
@@ -396,7 +396,7 @@ set `ComparePdfOptions.allowedInputRoot`.
 | `thresholdPercent` | `number \| null`       | Percentage threshold that the comparison applied to this page, or `null` when not set                                 |
 | `mismatchCount`    | `number \| null`       | Mismatch count from the comparator, or `null` when the page was not compared                                          |
 | `mismatchPercent`  | `number \| null`       | Mismatch percentage of the comparison canvas (larger width × larger height), or `null` when the page was not compared |
-| `diffFilePath`     | `string \| null`       | Diff image path, or `null` when the page was not compared or when diff image writing is disabled                      |
+| `diffFilePath`     | `string \| null`       | Planned diff image path for each compared page when writing is enabled. The file can be absent. Otherwise, `null`     |
 | `actualPageName`   | `string \| null`       | Name of the actual rendered page, from the renderer                                                                   |
 | `expectedPageName` | `string \| null`       | Name of the expected rendered page, from the renderer                                                                 |
 
@@ -447,7 +447,7 @@ the current PDF renderer. It is not a direct re-export of a type from a dependen
 | Property             | Type                             | Description                                                                                                                                                             |
 | -------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `viewportScale`      | `number`                         | Scale factor that the renderer applies before it renders                                                                                                                |
-| `disableFontFace`    | `boolean`                        | Use built-in fonts, not embedded fonts                                                                                                                                  |
+| `disableFontFace`    | `boolean`                        | Use the built-in PDF.js font renderer to draw glyphs as paths                                                                                                           |
 | `useSystemFonts`     | `boolean`                        | Let the renderer use system fonts as fallbacks                                                                                                                          |
 | `enableXfa`          | `boolean`                        | Render XFA form data                                                                                                                                                    |
 | `pdfFilePassword`    | `string`                         | Password for encrypted PDFs                                                                                                                                             |
@@ -463,7 +463,7 @@ these flags, the library throws an error.
 
 `pdfToPngConvertOptions.outputFolder` sets the folder for the rendered pages. It is independent of
 `diffsOutputFolder`, which applies only to diff image paths. When you set `outputFolder`, the library
-writes the two PDFs to the `actual/` and `expected/` subfolders of that folder. Thus, custom file
+writes the rendered PNG pages to the `actual/` and `expected/` subfolders of that folder. Thus, custom file
 name masks do not cause collisions.
 
 The library validates the render output folder with the same rules as `diffsOutputFolder`:
@@ -474,10 +474,8 @@ The library validates the render output folder with the same rules as `diffsOutp
 
 The library also makes the leaf folders itself. It makes the resolved folder and the `actual/` and
 `expected/` subfolders. Then it makes sure again that each one is a real folder, not a symbolic link.
-These steps occur before the first render call. The path check alone cannot close the time window
-between the validation and the render (TOCTOU). These steps close that window. Thus, an attacker
-cannot replace a future write destination with a symbolic link before the renderer writes its first
-file (CWE-59 / CWE-61 / CWE-367).
+These checks occur before the first render call. Use a trusted render output folder.
+Other processes with write access can change file system entries after the checks.
 
 ### `PageExclusion`
 

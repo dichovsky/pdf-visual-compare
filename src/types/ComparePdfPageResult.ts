@@ -57,10 +57,8 @@ export type ComparePdfPageResult = {
      * `null` means that the page was not compared, because one rendered counterpart was missing.
      * `null` also means that diff image writing was disabled.
      *
-     * When `compareThresholdPercent` or a per-page `matchingThresholdPercent` is set, a `matched`
-     * page can also have a diff image path. The diff image then shows the different pixels that
-     * the percentage threshold permitted. To find the pages that are not equal, use `isEqual` or `status`, not
-     * `diffFilePath`.
+     * When diff image writing is enabled, every compared page has a path, including a matched page.
+     * The path can refer to a file that does not exist. Use `isEqual` or `status` to check the result.
      */
     diffFilePath: string | null;
 

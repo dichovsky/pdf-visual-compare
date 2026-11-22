@@ -120,7 +120,7 @@ Categories:
 | mismatch count       | Technical name | The number of different pixels on one page, from `png-visual-compare`. Field `mismatchCount`.                                                   | "difference count", "diff count", "changed pixels" |
 | comparison canvas    | Technical name | The larger width multiplied by the larger height of the two rendered pages.                                                                     | "page area" (for this calculation)                 |
 | mismatch percentage  | Technical name | The mismatch count as a percentage of the comparison canvas. Field `mismatchPercent`.                                                           | "change percentage", "difference ratio"            |
-| pixel threshold      | Technical name | The maximum mismatch count for an equal page. Options `compareThreshold`, `matchingThreshold`.                                                  | "tolerance", "limit", "allowance"                  |
+| pixel threshold      | Technical name | The mismatch count that the pixel threshold permits. Options `compareThreshold`, `matchingThreshold`.                                           | "tolerance", "limit", "allowance"                  |
 | percentage threshold | Technical name | The maximum mismatch percentage for an equal page. Options `compareThresholdPercent`, `matchingThresholdPercent`.                               | "tolerance", "percent limit"                       |
 | equal                | Approved word  | A page or a document that is in its threshold. Field `isEqual`.                                                                                 | "identical", "passes", "equivalent", "matches"     |
 | page exclusion       | Technical name | One entry in the `excludedAreas` option. The entry applies to one page number.                                                                  | "exclusion zone", "exclusion rule"                 |
@@ -173,6 +173,7 @@ npx prettier --check <changed files>
 npm run lint
 npm run codemap
 npm run codemap:check
+npm run build
 npm run test:types
 npx vitest run
 ```
