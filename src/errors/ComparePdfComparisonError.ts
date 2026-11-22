@@ -1,6 +1,6 @@
 import { ComparePdfError } from './ComparePdfError.js';
 
 /**
- * Thrown when rendered PDF pages cannot be compared reliably.
+ * The library throws this error when it cannot compare rendered PDF pages reliably.
  */
 export class ComparePdfComparisonError extends ComparePdfError {}

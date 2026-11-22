@@ -1,59 +1,61 @@
 /**
- * Options for rendering PDF pages before visual comparison.
+ * Options that the renderer uses before the visual comparison.
  *
- * These options are part of this library's public contract and are adapted internally
- * to the current PDF rendering dependency. Options that disable page content or enable
- * parallel rendering are intentionally excluded because this library always renders
- * page images sequentially for safe comparison.
+ * These options are part of the public contract of this library. The library adapts them
+ * internally to the current PDF render dependency. This library always renders the pages
+ * sequentially, so that the comparison is safe. Thus, the type intentionally does not include
+ * options that disable page content or enable parallel rendering.
  */
 export type PdfRenderOptions = {
     /**
-     * Scale factor applied to each page viewport before rendering.
-     * Values above `1` produce larger, higher-resolution images; values below `1` produce smaller images.
+     * Scale factor that the renderer applies to each page viewport before it renders the page.
+     * A value more than `1` makes larger images with a higher resolution. A value less than `1`
+     * makes smaller images.
      */
     viewportScale?: number;
 
     /**
-     * When `true`, embedded fonts are not loaded and built-in fonts are used instead.
+     * When `true`, PDF.js uses its built-in font renderer to draw glyphs as paths.
      */
     disableFontFace?: boolean;
 
     /**
-     * When `true`, system-installed fonts may be used as fallbacks for missing embedded fonts.
+     * When `true`, the renderer can use installed system fonts when embedded fonts are missing.
      */
     useSystemFonts?: boolean;
 
     /**
-     * When `true`, XFA (XML Forms Architecture) form data is rendered.
+     * When `true`, the renderer renders XFA (XML Forms Architecture) form data.
      */
     enableXfa?: boolean;
 
     /**
-     * Password used to open an encrypted PDF.
+     * Password that opens an encrypted PDF.
      */
     pdfFilePassword?: string;
 
     /**
-     * Folder path where intermediate PNG files are written.
-     * This library namespaces the renderer output under `actual/` and `expected/` subfolders
-     * to avoid filename collisions between the two compared PDFs.
-     * When omitted, rendered pages stay in memory unless another option writes them to disk.
+     * Render output folder: the folder for the rendered PNG files.
+     * This library puts the renderer output in the `actual/` and `expected/` subfolders.
+     * Thus, the file names of the two PDFs do not collide.
+     * When omitted, the rendered pages stay in memory, unless a different option writes them to disk.
      */
     outputFolder?: string;
 
     /**
-     * Custom naming function for output PNG files.
-     * Receives the 1-based page number and must return a filename ending with `.png`.
+     * Function that makes the names of the PNG output files.
+     * The function receives the 1-based page number. It must return a file name that ends with `.png`.
      */
     outputFileMaskFunc?: (pageNumber: number) => string;
 
     /**
-     * 1-based page numbers to render. When omitted, all pages are rendered.
+     * 1-based page numbers for the renderer to consider. When omitted, it considers all pages.
+     * The comparison can further limit the selection with `ComparePdfOptions.pages`.
      */
     pagesToProcess?: number[];
 
     /**
-     * Renderer verbosity level. `0` logs errors only, `1` warnings, and `5` informational output.
+     * Log level of the renderer. `0` logs only errors, `1` logs warnings, and `5` logs information.
      */
     verbosityLevel?: number;
 };

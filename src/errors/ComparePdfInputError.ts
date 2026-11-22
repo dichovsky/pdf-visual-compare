@@ -1,6 +1,6 @@
 import { ComparePdfError } from './ComparePdfError.js';
 
 /**
- * Thrown when comparePdf receives invalid PDF input arguments.
+ * The library throws this error when comparePdf receives PDF input arguments that are not valid.
  */
 export class ComparePdfInputError extends ComparePdfError {}

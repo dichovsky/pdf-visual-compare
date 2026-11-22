@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Rewrote the repository documentation and the public API doc comments with the ASD-STE100 Simplified Technical English (Issue 9) writing rules as the guide. Added `docs/WRITING_GUIDE.md` with the terminology and the writing rules for this repository.
+
 ## [4.1.0] - 2026-07-30
 
 ### Added

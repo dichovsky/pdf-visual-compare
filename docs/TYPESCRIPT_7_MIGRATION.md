@@ -2,20 +2,21 @@
 
 ## Goal
 
-Use the TypeScript 7 native compiler for repository type-checking and package
-builds, while preserving the TypeScript 6 compiler API that the codemap
-generator and `typescript-eslint` still require.
+Use the TypeScript 7 native compiler for the type checks and the package build
+of the repository. Keep the TypeScript 6 compiler API, because the codemap
+generator and `typescript-eslint` still need it.
 
 ## Constraints
 
-- TypeScript 7.0 does not expose the legacy JavaScript compiler API. Its main
-  export is `./lib/version.cjs`; everything else is published under `unstable/*`
+- TypeScript 7.0 does not have the legacy JavaScript compiler API. Its main
+  export is `./lib/version.cjs`. All other exports are in `unstable/*`
   subpaths.
-- `scripts/generate-codemap.ts` imports `typescript` and uses `createProgram`
-  and the TypeChecker to build `CODEMAP.md`.
+- `scripts/generate-codemap.ts` imports `typescript`. It uses `createProgram`
+  and the TypeChecker to make `CODEMAP.md`.
 - `typescript-eslint` 8.x declares a peer range of `typescript >=4.8.4 <6.1.0`.
-- TypeScript is a development dependency only. The published package exposes no
-  TypeScript dependency, so the split toolchain affects development and CI only.
+- TypeScript is only a development dependency. The published package has no
+  TypeScript dependency. Thus, the split toolchain has an effect only on
+  development and CI.
 
 ## Dependency layout
 
@@ -24,38 +25,45 @@ generator and `typescript-eslint` still require.
 | `@typescript/native`    | `typescript@~7.0.2`              | Native compiler used by `build` and `test:types`                |
 | `typescript`            | `@typescript/typescript6@~6.0.2` | TypeScript 6 compiler API used by ESLint and the codemap script |
 
-The compatibility package depends on `@typescript/old` (`npm:typescript@^6`),
-which supplies the real TypeScript 6.0.3 implementation and the `tsserver`
-binary. Binary names do not collide: the compatibility package publishes its own
-compiler as `tsc6`, so a clean `npm ci` links `node_modules/.bin/tsc` to the
-native compiler.
+The compatibility package uses `@typescript/old` (`npm:typescript@^6`).
+`@typescript/old` gives the real TypeScript 6.0.3 implementation and the
+`tsserver` binary. The binary names do not collide. The compatibility package
+publishes its compiler as `tsc6`. Thus, a clean `npm ci` links
+`node_modules/.bin/tsc` to the native compiler.
 
-The `build` and `test:types` scripts nonetheless invoke the native compiler by
-its full package path so compiler selection cannot drift with install history:
+But the `build` and `test:types` scripts run the native compiler by its full
+package path. Thus, the selected compiler does not change with the install
+history:
 
 ```sh
 node ./node_modules/@typescript/native/bin/tsc --pretty -p ./tsconfig.prod.json
 node ./node_modules/@typescript/native/bin/tsc --pretty -p ./tsconfig.json
 ```
 
-Both ranges are tilde-pinned. A TypeScript 7 minor release can introduce new
-type errors, and the compatibility package must stay inside the support window
-that `typescript-eslint` declares.
+Both ranges use a tilde (`~`) pin for these reasons:
+
+- A TypeScript 7 minor release can cause new type errors.
+- The compatibility package must stay in the version range that
+  `typescript-eslint` supports.
 
 ## Source and configuration changes
 
-None. `tsconfig.json` and `tsconfig.prod.json` type-check clean under
-TypeScript 7 without modification, and no source file needed changes.
+None. `tsconfig.json` and `tsconfig.prod.json` type-check with no errors in
+TypeScript 7 without changes. No source file needed changes.
 
 ## Editor configuration
 
-`.vscode/` is not tracked in this repository, so editor settings must be adjusted
-locally. If your `.vscode/settings.json` sets
-`"typescript.tsdk": "node_modules/typescript/lib"`, remove that entry. The path
-now resolves to the compatibility package, whose `lib/` contains no
-`tsserver.js`, so VS Code cannot start a workspace TypeScript service from it.
-The native package ships no language server either — its editor support is a
-separate extension. Without the setting, VS Code falls back to its bundled
+This repository does not track `.vscode/`. Thus, you must change the editor
+settings locally.
+
+If your `.vscode/settings.json` sets
+`"typescript.tsdk": "node_modules/typescript/lib"`, remove that entry. That path
+now resolves to the compatibility package. The `lib/` folder of that package does not
+contain `tsserver.js`. Thus, VS Code cannot start a workspace TypeScript service
+from that path.
+
+The native package also does not include a language server. Its editor support
+is a separate extension. Without the setting, VS Code uses its bundled
 TypeScript.
 
 ## Verification
@@ -88,14 +96,22 @@ A subsequent clean `npm ci` confirmed the corrected lockfile is reproducible.
 
 ## Follow-up
 
-Reassess once TypeScript 7.1 provides a stable compiler API and
-`typescript-eslint` declares support for it. At that point, try replacing both
-aliases with a single plain `typescript@7` dependency, restore the plain `tsc`
-invocations, and remove this compatibility layout if codemap generation,
-linting, and the full test suite pass.
+Examine this layout again when these two conditions are true:
+
+- TypeScript 7.1 has a stable compiler API.
+- `typescript-eslint` declares support for that API.
+
+Then do these steps:
+
+1. Try to replace the two aliases with one plain `typescript@7` dependency.
+2. Change the scripts back to plain `tsc` commands.
+3. If codemap generation, linting, and the full test suite pass, remove this
+   compatibility layout.
 
 ## Rollback
 
-Remove `@typescript/native`, restore `typescript` to `~6.0.3`, revert the
-`build` and `test:types` scripts to plain `tsc`, regenerate the lockfile, and
-rerun the verification steps above.
+1. Remove `@typescript/native`.
+2. Change `typescript` back to `~6.0.3`.
+3. Change the `build` and `test:types` scripts back to plain `tsc`.
+4. Make the lockfile again.
+5. Do the verification steps above again.

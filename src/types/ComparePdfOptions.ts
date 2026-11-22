@@ -2,83 +2,92 @@ import type { PageExclusion } from './PageExclusion.js';
 import type { PdfRenderOptions } from './PdfRenderOptions.js';
 
 /**
- * Options for configuring the PDF comparison process.
+ * Options for the PDF comparison.
  */
 export type ComparePdfOptions = {
     /**
-     * When `true`, writes diff PNG images to disk.
-     * When omitted or `false`, comparison stays in memory and no diff files are produced.
+     * When `true`, the comparison writes diff images to disk.
+     * When omitted or `false`, the comparison writes no diff images. The renderer can still write PNGs to its output folder.
      * @default false
      */
     writeDiffs?: boolean;
 
     /**
-     * Folder path that defines the allowed root for diff PNG images written when differences are found.
-     * Auto-generated diff paths and any per-page `diffFilePath` overrides must stay within this root.
-     * Callers should treat this as a trusted filesystem write location on a trusted local filesystem.
-     * If provided, it is validated even when `writeDiffs` is `false`; diff files are only written
-     * when `writeDiffs` is `true`.
+     * The diff output folder: the root folder for diff images. When `writeDiffs` is `true` and a page
+     * has different pixels, the comparison writes a diff image to this folder. Generated diff paths
+     * and each per-page `diffFilePath` must stay in this folder.
+     * We recommend that callers use a trusted folder on a trusted local file system.
+     * When you set this option, the comparison validates it, also when `writeDiffs` is `false`.
+     * The comparison writes diff images only when `writeDiffs` is `true`.
      * @default "./comparePdfOutput"
      */
     diffsOutputFolder?: string;
 
     /**
-     * Optional workspace root that constrains string PDF inputs.
+     * Optional input root for string PDF inputs.
      *
-     * When set, `actualPdf` and `expectedPdf` string paths must resolve within this directory
-     * or `comparePdf()` throws a `ComparePdfConfigurationError`.
+     * When you set this option, the `actualPdf` and `expectedPdf` string paths must resolve to a
+     * path in this folder. If a path is not in this folder, `comparePdf()` throws a
+     * `ComparePdfConfigurationError`.
      *
-     * When omitted, string paths are treated as trusted caller-controlled local file paths.
-     * Binary inputs (`Buffer`, `ArrayBuffer`, `SharedArrayBuffer`) are not affected.
+     * When omitted, string paths are trusted local file paths that the caller controls.
+     * This option has no effect on binary inputs (`Buffer`, `ArrayBuffer`, `SharedArrayBuffer`).
      */
     allowedInputRoot?: string;
 
     /**
-     * Options for rendering PDF pages before comparison.
+     * Options to render the PDF pages before the comparison.
      */
     pdfToPngConvertOptions?: PdfRenderOptions;
 
     /**
-     * Per-page areas to exclude from pixel comparison, matched by the rendered page's
-     * `pageNumber` field (1-based).
+     * Each entry is a page exclusion: the excluded areas for one page. The comparison does not
+     * examine these areas. Each entry applies to the rendered page with the same `pageNumber` (1-based).
      *
-     * Entries for pages that were not rendered are ignored. If multiple entries target the
-     * same `pageNumber`, the first entry wins and later duplicates are ignored.
+     * The comparison ignores an entry for a page that was not rendered. If two or more entries
+     * have the same `pageNumber`, the comparison uses the first entry and ignores the others.
      * @default []
      */
     excludedAreas?: readonly PageExclusion[];
 
     /**
-     * Maximum number of differing pixels allowed before the comparison is considered a failure.
-     * A value of `0` requires a pixel-perfect match. Must be a finite non-negative integer.
+     * Number of different pixels that the pixel threshold permits. Use a finite non-negative integer.
+     * If the count exceeds this value, the page can still meet the percentage threshold.
      * @default 0
      * @throws {ComparePdfConfigurationError} When set to a negative, fractional, infinite, or `NaN` value.
      */
     compareThreshold?: number;
 
     /**
-     * Optional maximum percentage of differing pixels (relative to the rendered page area)
-     * allowed before a page is considered a failure. A page passes when it stays within EITHER
-     * `compareThreshold` (pixel count) OR this percentage threshold — the two criteria are
-     * alternative, not cumulative, so configuring a percentage relaxes, never tightens, the
-     * pixel-count default.
+     * Optional percentage threshold. A page meets this threshold when its mismatch percentage is at or below the set value. The
+     * mismatch percentage is the mismatch count as a percentage of the comparison canvas. The
+     * comparison canvas is the larger width multiplied by the larger height of the two rendered pages.
      *
-     * Must be a finite number in the range 0–100. When omitted, only the pixel-count threshold
+     * A page is equal when it is in EITHER `compareThreshold` (pixel count) OR this percentage
+     * threshold. The page does not have to be in both thresholds. Thus, a percentage threshold
+     * can make the pixel threshold less strict, but never more strict.
+     *
+     * The value must be a finite number from 0 to 100. When omitted, only the pixel threshold
      * applies.
      * @throws {ComparePdfConfigurationError} When set outside 0–100, infinite, or `NaN`.
      */
     compareThresholdPercent?: number;
 
     /**
-     * Restricts the comparison to a subset of pages. Accepts a comma-separated range spec
-     * (e.g. `"1-3,5,7"`) or an explicit array of 1-based page numbers (e.g. `[1, 2, 3, 5, 7]`).
+     * Selects the pages that the comparison examines. The value is a comma-separated list of page
+     * numbers and ranges (for example, `"1-3,5,7"`) or an array of 1-based page numbers (for example, `[1, 2, 3, 5, 7]`).
      *
-     * When omitted, every rendered page is compared. A selected page present in only one PDF is
-     * reported as a missing counterpart; selected pages that exist in neither PDF are ignored as
-     * long as the selection still matches at least one rendered page. If the selection matches no
-     * rendered page in either PDF, the comparison throws rather than silently passing.
+     * When omitted, the comparison examines every rendered page.
+     *
+     * When you set this option:
+     * - If a selected page is in only one PDF, the result shows a missing counterpart for it.
+     * - If a selected page is not in the actual PDF and not in the expected PDF, the comparison
+     *   ignores the page. The comparison ignores such a page only when the selection contains a
+     *   minimum of one rendered page.
+     * - If the selection contains no rendered page of either PDF, the comparison throws an error.
+     *   It does not report the PDFs as equal.
      * @throws {ComparePdfConfigurationError} When the selection is malformed, selects no page, or
-     * matches no rendered page in either PDF.
+     * contains no rendered page of either PDF.
      */
     pages?: string | readonly number[];
 };

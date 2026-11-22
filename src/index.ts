@@ -2,9 +2,9 @@
  * pdf-visual-compare
  *
  * Visual regression testing library for PDFs in JavaScript/TypeScript.
- * Converts PDF pages to PNG images and performs pixel-level comparison,
- * without requiring external system packages. The current renderer uses
- * prebuilt native `@napi-rs/canvas` binaries bundled through its dependency tree.
+ * The library renders PDF pages to PNG images and compares them pixel by pixel.
+ * External system packages are not necessary. The current renderer uses prebuilt
+ * native `@napi-rs/canvas` binaries from its dependency tree.
  *
  * @module pdf-visual-compare
  */

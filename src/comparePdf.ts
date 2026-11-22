@@ -13,19 +13,19 @@ import type { PdfInput } from './types/PdfInput.js';
 import type { PdfToPngOptions, PngPageOutput } from 'pdf-to-png-converter';
 
 /**
- * Compares two PDF inputs and returns a boolean indicating whether they are visually equivalent.
+ * Compares two PDF inputs and returns a boolean. The boolean is `true` when the two PDFs are equal.
  *
- * Supported PDF inputs are file paths, `Buffer`, `ArrayBuffer`, and `SharedArrayBuffer`. String
- * paths are trusted caller-controlled inputs by default. To constrain them to a specific
- * workspace, set `options.allowedInputRoot`. `SharedArrayBuffer` inputs are normalized to
- * `ArrayBuffer` before rendering.
+ * The supported PDF inputs are file paths, `Buffer`, `ArrayBuffer`, and `SharedArrayBuffer`.
+ * By default, string paths are trusted inputs that the caller controls. To keep them in a
+ * specified folder, set `options.allowedInputRoot`. The library normalizes `SharedArrayBuffer`
+ * inputs to `ArrayBuffer` before the renderer starts.
  *
- * Diff PNGs are not written unless `options.writeDiffs` is explicitly set to `true`. When enabled,
- * `options.diffsOutputFolder` acts as a trusted write root on a trusted local filesystem.
+ * The library writes diff images only when you set `options.writeDiffs` to `true`. When you enable
+ * `options.writeDiffs`, `options.diffsOutputFolder` is a trusted folder on a trusted local file system.
  *
- * Rendered pages are paired by renderer-reported `pageNumber`, not by generated PNG filename
- * or `excludedAreas` array position. If either PDF is missing a rendered counterpart for a
- * page number present in the comparison plan, the overall comparison returns `false`.
+ * The library pairs rendered pages by the `pageNumber` that the renderer gives. It does not use
+ * the generated PNG file name or the position in the `excludedAreas` array. If a page number in
+ * the comparison plan has no rendered counterpart in one PDF, the comparison returns `false`.
  *
  * @param actualPdf - The file path or binary content of the actual PDF to compare.
  * @param expectedPdf - The file path or binary content of the expected PDF to compare against.
@@ -49,18 +49,19 @@ export async function comparePdf(actualPdf: unknown, expectedPdf: unknown, opts?
 }
 
 /**
- * Compares two PDF inputs and returns structured page-level comparison details.
+ * Compares two PDF inputs and returns the comparison details of each page.
  *
- * Supported PDF inputs are file paths, `Buffer`, `ArrayBuffer`, and `SharedArrayBuffer`. String
- * paths are trusted caller-controlled inputs by default. To constrain them to a specific
- * workspace, set `options.allowedInputRoot`. `SharedArrayBuffer` inputs are normalized to
- * `ArrayBuffer` before rendering.
+ * The supported PDF inputs are file paths, `Buffer`, `ArrayBuffer`, and `SharedArrayBuffer`.
+ * By default, string paths are trusted inputs that the caller controls. To keep them in a
+ * specified folder, set `options.allowedInputRoot`. The library normalizes `SharedArrayBuffer`
+ * inputs to `ArrayBuffer` before the renderer starts.
  *
- * Diff PNGs are not written unless `options.writeDiffs` is explicitly set to `true`.
+ * The library writes diff images only when you set `options.writeDiffs` to `true`.
  *
- * Rendered pages are paired by renderer-reported `pageNumber`, not by generated PNG filename
- * or `excludedAreas` array position. Missing rendered counterpart pages are surfaced in the
- * returned page results without requiring callers to inspect diff files on disk.
+ * The library pairs rendered pages by the `pageNumber` that the renderer gives. It does not use
+ * the generated PNG file name or the position in the `excludedAreas` array. The page results
+ * show the pages that have no rendered counterpart. Callers do not have to examine diff images
+ * on disk.
  *
  * @param actualPdf - The file path or binary content of the actual PDF to compare.
  * @param expectedPdf - The file path or binary content of the expected PDF to compare against.
