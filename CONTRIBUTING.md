@@ -164,7 +164,7 @@ Pull requests to `main` must pass these required GitHub status checks before a m
 This name is the exact check name of the job in the `CI` workflow in `.github/workflows/test.yml`.
 The `Publish Package` workflow is only for releases. It is not part of the merge gate for `main`.
 
-If the job names of the CI workflow change, update this document and the `main` required checks together.
+If the job names of the CI workflow change, update this file and the `main` required checks together.
 Then the documented policy agrees with the repository settings.
 
 A matrix in the job changes the check name. A matrix job reports as `test (<values>)`, not `test`.

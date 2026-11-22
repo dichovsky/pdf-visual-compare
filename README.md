@@ -51,7 +51,7 @@
 ## Requirements
 
 - Node.js >= 24
-- Supported runtimes: Linux and macOS. CI validates only Linux. macOS is supported, but automated runs do not examine it.
+- Supported runtimes: Linux and macOS. The CI job runs only on Linux. macOS is supported, but no CI job runs on macOS.
 - Windows is not supported.
 
 ## Docker
@@ -189,14 +189,14 @@ const isEqual = await comparePdf('./actual.pdf', './expected.pdf', options);
 `SharedArrayBuffer`. Before the renderer starts, the library normalizes `SharedArrayBuffer` inputs.
 
 By default, string paths are only for trusted local files. If you must accept path strings from callers,
-we recommend that you do one of these steps:
+we recommend that you use one of these methods:
 
 - Set `allowedInputRoot` to keep the paths in a specified folder.
 - Use binary inputs.
 
 The library writes diff images only when `writeDiffs: true`. When you enable `writeDiffs`, use a
-trusted folder for `diffsOutputFolder`. Keep all `diffFilePath` values in that folder. This boundary
-is valid only on a trusted local file system during the comparison.
+trusted folder for `diffsOutputFolder`. Keep all `diffFilePath` values in that folder. The diff output folder
+boundary is valid only on a trusted local file system during the comparison.
 
 ```typescript
 import { readFileSync } from 'node:fs';
@@ -289,8 +289,8 @@ in the comparison plan has no rendered counterpart in one PDF, the comparison re
 
 The library makes the comparison plan first. Then it renders and compares one page at a time, to
 limit the memory usage for PDFs with many pages. `png-visual-compare` 6.x has more asynchronous
-comparison entry points. This library continues to call `comparePng()` sequentially. The library will compare pages sequentially
-until a benchmark and a safety review of the dependency show that parallel comparison is safe.
+comparison entry points. This library calls `comparePng()` sequentially. The library will not compare pages in parallel until a
+benchmark and a safety review of the dependency support the change.
 
 String inputs are trusted file paths that the caller controls, unless you set
 `options.allowedInputRoot`. When you set `allowedInputRoot`, the two string inputs must resolve to
@@ -299,7 +299,7 @@ immediately. Thus, the renderer uses the bytes and does not open the caller path
 
 When `options.writeDiffs` is `true`, the library writes diff images to `options.diffsOutputFolder`.
 This folder is a trusted diff output folder. Generated diff paths and all `excludedAreas[].diffFilePath`
-values must resolve to paths in that folder. This boundary is valid only on a trusted local file
+values must resolve to paths in that folder. The diff output folder boundary is valid only on a trusted local file
 system during the comparison. If you set `diffsOutputFolder`, the library validates it, also
 when `writeDiffs` is `false`.
 
@@ -325,12 +325,12 @@ when `writeDiffs` is `false`.
 - `ComparePdfConfigurationError: Compare Threshold Percent must be a finite number between 0 and 100.` — when `options.compareThresholdPercent` is negative, more than 100, `NaN`, or infinite.
 - `ComparePdfConfigurationError: Matching Threshold Percent must be a finite number between 0 and 100.` — when `excludedAreas[].matchingThresholdPercent` is negative, more than 100, `NaN`, or infinite.
 - `ComparePdfConfigurationError: pages selection matched no rendered page in either PDF.` — when `options.pages` selects only page numbers that are not in the actual PDF and not in the expected PDF.
-- `ComparePdfConfigurationError: pages ...` — when `options.pages` is malformed in a different way. Examples: an empty selection, a descending range, a page number that is not a safe integer, or too many selected pages.
+- `ComparePdfConfigurationError: pages ...` — when `options.pages` is not correct for a different reason. Examples: an empty selection, a descending range, a page number that is not a positive safe integer, or too many selected pages.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions must be an object.` — when an untyped caller gives render options that are not an object.
 - `ComparePdfConfigurationError: Unsupported pdfToPngConvertOptions properties: ...` — when an untyped caller gives render options that skip page content or enable parallel rendering.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must be a non-empty string.` — when an untyped caller gives a render output folder that is not a string or that is blank.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a directory when it already exists: <path>` — when the render output folder path exists as a file.
-- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output folder or any existing folder above it in the path is a symbolic link. The library also throws this error after `mkdir`, when it finds a symbolic link at the resolved folder. A symbolic link at a pre-created `actual/` or `expected/` subfolder also causes this error. This check gives the same protection as `diffsOutputFolder`.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output folder or any existing folder above it in the path is a symbolic link. The library also throws this error after `mkdir`, when it finds a symbolic link at the resolved folder. A symbolic link at a pre-created `actual/` or `expected/` subfolder also causes this error. The library examines the path and the existing folders above it with the same rules as `diffsOutputFolder`.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a writable directory: <path>` — when the library cannot make the resolved render output folder or its `actual/` and `expected/` subfolders. For example, a file can be at the path of the folder.
 - `ComparePdfRenderingError: Failed to render actual PDF pages.` / `Failed to render expected PDF pages.` — when the PDF renderer dependency fails. The `cause` property contains the original dependency exception.
 - `ComparePdfRenderingError: Rendered page content is missing for page: <page-name>.` — when the renderer returns a page without binary PNG content.
@@ -411,14 +411,14 @@ type ComparePdfPageStatus = 'matched' | 'mismatched' | 'missing-actual' | 'missi
 `ComparePdfDetailedResult.summary` is a document-level summary. The library calculates it only from
 the page results.
 
-| Property             | Type     | Description                                                                    |
-| -------------------- | -------- | ------------------------------------------------------------------------------ |
-| `totalPages`         | `number` | Number of planned page entries (the same as `pages.length`)                    |
-| `matchedPages`       | `number` | Number of pages in their applicable threshold                                  |
-| `mismatchedPages`    | `number` | Number of pages that are not in their applicable threshold                     |
-| `missingPages`       | `number` | Number of pages without a counterpart (`missing-actual` or `missing-expected`) |
-| `maxMismatchPercent` | `number` | Largest `mismatchPercent` of a page. `0` when no page was compared             |
-| `totalMismatchCount` | `number` | Sum of `mismatchCount` for the compared pages                                  |
+| Property             | Type     | Description                                                                        |
+| -------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `totalPages`         | `number` | Number of planned page entries (the same as `pages.length`)                        |
+| `matchedPages`       | `number` | Number of pages in their applicable threshold                                      |
+| `mismatchedPages`    | `number` | Number of compared pages that are not in their applicable threshold (`mismatched`) |
+| `missingPages`       | `number` | Number of pages without a counterpart (`missing-actual` or `missing-expected`)     |
+| `maxMismatchPercent` | `number` | Largest `mismatchPercent` of a page. `0` when no page was compared                 |
+| `totalMismatchCount` | `number` | Sum of `mismatchCount` for the compared pages                                      |
 
 ### `toJsonReport` / `toJUnitReport`
 
