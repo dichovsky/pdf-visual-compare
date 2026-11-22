@@ -59,7 +59,7 @@ export type ComparePdfOptions = {
     compareThreshold?: number;
 
     /**
-     * Optional percentage threshold: the maximum mismatch percentage on an equal page. The
+     * Optional percentage threshold. A page meets this threshold when its mismatch percentage is at or below the set value. The
      * mismatch percentage is the mismatch count as a percentage of the comparison canvas. The
      * comparison canvas is the larger width multiplied by the larger height of the two rendered pages.
      *

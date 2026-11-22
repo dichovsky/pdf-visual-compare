@@ -430,7 +430,7 @@ import { comparePdfDetailed, toJsonReport, toJUnitReport } from 'pdf-visual-comp
 
 const result = await comparePdfDetailed('./actual.pdf', './expected.pdf');
 
-const json = toJsonReport(result); // formatted JSON. JSON.parse gives the same result object.
+const json = toJsonReport(result); // formatted JSON. JSON.parse returns an object with the same field values.
 const junit = toJUnitReport(result); // JUnit XML: one <testcase> for each page, a <failure> for each page that is not equal
 ```
 
