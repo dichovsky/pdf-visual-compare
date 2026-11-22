@@ -29,7 +29,7 @@
     - [Basic comparison](#basic-comparison)
     - [Detailed comparison results](#detailed-comparison-results)
     - [Comparison with options](#comparison-with-options)
-    - [Comparing PDF buffers](#comparing-pdf-buffers)
+    - [Comparing PDF binary inputs](#comparing-pdf-binary-inputs)
 - [CLI](#cli)
 - [API](#api)
     - [comparePdf](#comparepdfactualpdf-expectedpdf-options)
@@ -51,13 +51,14 @@
 ## Requirements
 
 - Node.js >= 24
-- Supported runtimes: Linux and macOS. CI validates Linux only; macOS is supported but not covered by automated runs
-- Windows is not supported
+- Supported runtimes: Linux and macOS. CI validates only Linux. macOS is supported, but automated runs do not test it.
+- Windows is not supported.
 
 ## Docker
 
-The Docker image is for local/containerized test execution only. It builds a slim test runner that
-installs just the dependencies needed to execute Vitest against the checked-in source and fixtures.
+Use the Docker image only to run tests locally or in a container. The image is a small test runner.
+It installs only the dependencies that are necessary to run Vitest on the source and fixtures in the
+repository.
 
 ---
 
@@ -67,9 +68,9 @@ installs just the dependencies needed to execute Vitest against the checked-in s
 npm install -D pdf-visual-compare
 ```
 
-`pdf-visual-compare` now depends on `pdf-to-png-converter` 4.x, which ships prebuilt native canvas
-bindings through `@napi-rs/canvas`. No external system packages are required, but consumers must use
-Node 24 or newer.
+`pdf-visual-compare` uses `pdf-to-png-converter` 4.x. This dependency includes prebuilt native canvas
+bindings from `@napi-rs/canvas`. Thus, external system packages are not necessary. Callers must use
+Node.js 24 or later.
 
 ## Validation
 
@@ -79,17 +80,17 @@ npm run test:artifacts  # Verify the built package entry points and npm pack con
 npm test                # Full pipeline: clean → lint → license check → build → type/artifact checks → vitest --coverage
 ```
 
-`npm run test:types` includes the published-surface fixture under `__tests__/published-artifacts/`,
-so it still expects `./out/` to be up to date. `npm test` handles that automatically.
+`npm run test:types` includes the published-surface fixture in `__tests__/published-artifacts/`.
+Thus, `./out/` must be up to date before you run it. `npm test` updates `./out/` automatically.
 
 ## Repository merge policy
 
-For pull requests targeting `main`, the required GitHub status checks are:
+Pull requests to `main` must pass this required GitHub status check:
 
 - `test`
 
-That check name comes from the job in the `CI` workflow (`.github/workflows/test.yml`).
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor workflow and merge expectations.
+This check name is the name of the job in the `CI` workflow (`.github/workflows/test.yml`).
+For the contributor workflow and the merge expectations, refer to [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ---
 
@@ -101,8 +102,8 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor workflow and merg
 import { comparePdf } from 'pdf-visual-compare';
 
 const isEqual = await comparePdf('./actual.pdf', './expected.pdf');
-// true  → PDFs are visually identical
-// false → PDFs differ
+// true  → the two PDFs are equal
+// false → the two PDFs are not equal
 ```
 
 ### Detailed comparison results
@@ -126,34 +127,34 @@ import type { ComparePdfOptions } from 'pdf-visual-compare';
 import { comparePdf } from 'pdf-visual-compare';
 
 const options: ComparePdfOptions = {
-    // Enable diff PNG output explicitly. Default: false
+    // Write diff images to disk. Default: false
     writeDiffs: true,
 
-    // Trusted root folder for diff PNG images written when differences are found.
-    // Generated diff paths and per-page diffFilePath overrides must stay inside this folder.
-    // If the path already exists, it must be a directory.
+    // Trusted diff output folder. The comparison writes diff images to this folder.
+    // Generated diff paths and per-page diffFilePath values must stay in this folder.
+    // If the path exists, it must be a folder.
     // Default: ./comparePdfOutput
     diffsOutputFolder: 'test-results/diffs',
 
-    // Optional trust boundary for string PDF paths. When set, both actualPdf and expectedPdf
-    // must resolve inside this directory or comparePdf throws ComparePdfConfigurationError.
+    // Optional input root for string PDF paths. When set, actualPdf and expectedPdf
+    // must resolve to a path in this folder. If not, comparePdf throws ComparePdfConfigurationError.
     allowedInputRoot: '.',
 
-    // Maximum number of differing pixels allowed before the comparison fails.
-    // 0 = pixel-perfect match required (default). Must be a finite non-negative integer.
+    // Pixel threshold: the maximum number of different pixels on an equal page.
+    // 0 = a pixel-perfect match is necessary (default). Must be a finite non-negative integer.
     compareThreshold: 200,
 
-    // Optional percentage threshold (0–100), evaluated ALONGSIDE compareThreshold.
-    // A page passes when within EITHER threshold, so a percentage relaxes the pixel default.
+    // Optional percentage threshold (0–100). The comparison uses it TOGETHER WITH compareThreshold.
+    // A page is equal when it is in EITHER threshold. Thus, a percentage makes the pixel default less strict.
     compareThresholdPercent: 1.5,
 
-    // Optionally restrict the comparison to a subset of pages: a range spec or a number[].
-    // A selection that matches no rendered page in either PDF throws instead of passing.
+    // Optional page selection: a range or a number[].
+    // If the selection contains no rendered page of the two PDFs, the comparison throws an error.
     pages: '1-3,5,7',
 
-    // Per-page exclusion zones, matched by the `pageNumber` field (1-based).
-    // `pageNumber: 1` → first page, `pageNumber: 2` → second page, etc.
-    // Pixel coordinates are relative to the rendered PNG at the configured viewportScale.
+    // Page exclusions. Each entry applies to the page with the same `pageNumber` (1-based).
+    // `pageNumber: 1` → first page, `pageNumber: 2` → second page, and so on.
+    // Pixel coordinates are on the rendered PNG at the viewportScale that you set.
     excludedAreas: [
         {
             pageNumber: 1,
@@ -171,7 +172,7 @@ const options: ComparePdfOptions = {
         useSystemFonts: false,
         enableXfa: false,
         pdfFilePassword: 'pa$$word',
-        // Renderer intermediate files are written under output/pngs/actual and output/pngs/expected.
+        // The renderer writes rendered pages to output/pngs/actual and output/pngs/expected.
         outputFolder: 'output/pngs',
         outputFileMaskFunc: (pageNumber) => `page_${pageNumber}.png`,
         pagesToProcess: [1, 3],
@@ -184,16 +185,18 @@ const isEqual = await comparePdf('./actual.pdf', './expected.pdf', options);
 
 ### Comparing PDF binary inputs
 
-`comparePdf` accepts file paths plus these binary inputs: `Buffer`, `ArrayBuffer`, and
-`SharedArrayBuffer`. `SharedArrayBuffer` inputs are normalized internally before rendering.
+`comparePdf` accepts file paths and these binary inputs: `Buffer`, `ArrayBuffer`, and
+`SharedArrayBuffer`. Before the renderer starts, the library normalizes `SharedArrayBuffer` inputs.
 
-String paths are intended for trusted local usage by default. If you need to accept caller-provided
-path strings, set `allowedInputRoot` to constrain them to a specific workspace, or prefer binary
-inputs instead.
+By default, string paths are for trusted local use only. If you must accept path strings from callers,
+we recommend that you do one of these steps:
 
-Diff PNGs are written only when `writeDiffs: true`. When enabled, treat `diffsOutputFolder` as a
-trusted write root and keep any `diffFilePath` overrides inside that directory. This boundary
-assumes a trusted local filesystem while the comparison is running.
+- Set `allowedInputRoot` to keep the paths in a specified folder.
+- Use binary inputs.
+
+The library writes diff images only when `writeDiffs: true`. When you enable `writeDiffs`, use a
+trusted folder for `diffsOutputFolder`. Keep all `diffFilePath` values in that folder. This boundary
+is valid only on a trusted local file system during the comparison.
 
 ```typescript
 import { readFileSync } from 'node:fs';
@@ -228,7 +231,7 @@ const isEqual = await comparePdf(actual, expected);
 
 ## CLI
 
-Compare two PDFs straight from the terminal — no test file required:
+Use the command-line interface (CLI) to compare two PDFs in a terminal. You do not need a test file.
 
 ```sh
 npx pdf-visual-compare actual.pdf expected.pdf
@@ -252,15 +255,18 @@ Options:
 
 **Exit codes:** `0` success, `1` differences found (only with `--fail-on-diff`), `2` usage or runtime error.
 
-CI example — fail the job on any visual difference and emit a JUnit report:
+CI example: this command makes the job fail when a page is not equal. It also writes a JUnit report.
 
 ```sh
 npx pdf-visual-compare actual.pdf expected.pdf --fail-on-diff --format junit > pdf-report.xml
 ```
 
-The CLI is a thin wrapper over `comparePdfDetailed()`; flags map directly to `ComparePdfOptions`
-(`--threshold` → `compareThreshold`, `--threshold-percent` → `compareThresholdPercent`,
-`--pages` → `pages`, `--out` → `writeDiffs` + `diffsOutputFolder`).
+The CLI is a thin wrapper around `comparePdfDetailed()`. Each flag sets a `ComparePdfOptions` property:
+
+- `--threshold` sets `compareThreshold`.
+- `--threshold-percent` sets `compareThresholdPercent`.
+- `--pages` sets `pages`.
+- `--out` sets `writeDiffs` and `diffsOutputFolder`.
 
 ---
 
@@ -268,75 +274,79 @@ The CLI is a thin wrapper over `comparePdfDetailed()`; flags map directly to `Co
 
 ### `comparePdf(actualPdf, expectedPdf, options?)`
 
-| Parameter     | Type                             | Description                                        |
-| ------------- | -------------------------------- | -------------------------------------------------- |
-| `actualPdf`   | `PdfInput`                       | File path or supported binary PDF input under test |
-| `expectedPdf` | `PdfInput`                       | File path or supported binary reference PDF        |
-| `options`     | `ComparePdfOptions` _(optional)_ | Comparison configuration                           |
+| Parameter     | Type                             | Description                                   |
+| ------------- | -------------------------------- | --------------------------------------------- |
+| `actualPdf`   | `PdfInput`                       | File path or binary input of the actual PDF   |
+| `expectedPdf` | `PdfInput`                       | File path or binary input of the expected PDF |
+| `options`     | `ComparePdfOptions` _(optional)_ | Comparison options                            |
 
-Returns `Promise<boolean>` — a backwards-compatible convenience wrapper over
-`comparePdfDetailed()` that resolves to `result.isEqual`.
+Returns `Promise<boolean>`. This function is a backward-compatible wrapper around
+`comparePdfDetailed()`. The promise resolves to `result.isEqual`.
 
-Rendered pages are paired by the renderer-reported `pageNumber` (1-based), not by generated PNG
-file names or by the position of entries inside `excludedAreas`. If one side is missing a rendered
-counterpart for a page number in the comparison plan, the comparison returns `false`.
+The library pairs rendered pages by the `pageNumber` (1-based) that the renderer gives. It does not
+use the generated PNG file names or the position of the entries in `excludedAreas`. If a page number
+in the comparison plan has no rendered counterpart in one PDF, the comparison returns `false`.
 
-The library discovers the page plan first, then renders and compares one page at a time to keep
-memory bounded on multi-page PDFs. `png-visual-compare` 6.x now exposes additional async/ported
-comparison entry points, but this library still uses sequential `comparePng()` calls until a
-benchmark and dependency-level safety review justify parallel execution.
+The library makes the comparison plan first. Then it renders and compares one page at a time, to
+limit the memory usage for PDFs with many pages. `png-visual-compare` 6.x has more asynchronous
+comparison entry points. This library continues to call `comparePng()` sequentially. The library will compare pages sequentially
+until a benchmark and a safety review of the dependency show that parallel comparison is safe.
 
-String inputs are trusted caller-controlled file paths unless `options.allowedInputRoot` is set. If
-`allowedInputRoot` is configured, both string inputs must resolve within that directory. After
-boundary validation, string inputs are opened and read immediately so rendering operates on bytes
-instead of reopening caller paths later.
+String inputs are trusted file paths that the caller controls, unless you set
+`options.allowedInputRoot`. When you set `allowedInputRoot`, the two string inputs must resolve to
+paths in that folder. After the library validates the boundary, it opens and reads the string inputs
+immediately. Thus, the renderer uses the bytes and does not open the caller paths again.
 
-When `options.writeDiffs` is `true`, diff outputs are written under `options.diffsOutputFolder`,
-which acts as a trusted write root. Auto-generated diff paths and any
-`excludedAreas[].diffFilePath` overrides must resolve within that directory. This boundary assumes a
-trusted local filesystem while the comparison is running. If `diffsOutputFolder` is provided, it is
-still validated even when `writeDiffs` is `false`.
+When `options.writeDiffs` is `true`, the library writes diff images to `options.diffsOutputFolder`.
+This folder is a trusted diff output folder. Generated diff paths and all `excludedAreas[].diffFilePath`
+values must resolve to paths in that folder. This boundary is valid only on a trusted local file
+system during the comparison. If you set `diffsOutputFolder`, the library validates it, also
+when `writeDiffs` is `false`.
 
 **Throws:**
 
-- `ComparePdfInputError: PDF file not found: <path>` — when a string argument points to a non-existent file.
-- `ComparePdfInputError: PDF path is not a file: <path>` — when a string argument points to an existing directory or other non-file path.
-- `ComparePdfInputError: Failed to read PDF file: <path>` — when a string argument exists but the library cannot open or read it. The original filesystem exception is attached as `cause`.
+- `ComparePdfInputError: PDF file not found: <path>` — when a string argument points to a file that does not exist.
+- `ComparePdfInputError: PDF path is not a file: <path>` — when a string argument points to a folder or to a different path that is not a file.
+- `ComparePdfInputError: Failed to read PDF file: <path>` — when a string argument exists, but the library cannot open or read it. The `cause` property contains the original file system exception.
 - `ComparePdfInputError: Unknown input file type.` — when an argument is not a `string`, `Buffer`, `ArrayBuffer`, or `SharedArrayBuffer`.
-- `ComparePdfConfigurationError: Options must be an object.` — when an untyped caller passes a non-object third argument.
-- `ComparePdfConfigurationError: diffsOutputFolder must be a non-empty string.` — when an untyped caller passes a non-string or blank diff root.
-- `ComparePdfConfigurationError: diffsOutputFolder must point to a directory when it already exists: <path>` — when the configured diff root already exists as a file.
-- `ComparePdfConfigurationError: allowedInputRoot must be a non-empty string.` — when an untyped caller passes a non-string or blank path boundary.
-- `ComparePdfConfigurationError: allowedInputRoot does not exist: <path>` — when `allowedInputRoot` points to a missing path.
-- `ComparePdfConfigurationError: allowedInputRoot must point to an existing directory: <path>` — when `allowedInputRoot` points to a file instead of a directory.
-- `ComparePdfConfigurationError: actualPdf must resolve within allowedInputRoot: <path>` / `expectedPdf must resolve within allowedInputRoot: <path>` — when a string PDF input escapes the configured root.
-- `ComparePdfConfigurationError: excludedAreas must be an array.` — when an untyped caller passes a non-array `excludedAreas` value.
-- `ComparePdfConfigurationError: Each excludedAreas entry must be an object.` — when an untyped caller passes a non-object item inside `excludedAreas`.
-- `ComparePdfConfigurationError: Diff output path must stay within diffsOutputFolder: <path>` — when an auto-generated diff path or `excludedAreas[].diffFilePath` override escapes the configured diff root.
+- `ComparePdfConfigurationError: Options must be an object.` — when an untyped caller gives a third argument that is not an object.
+- `ComparePdfConfigurationError: diffsOutputFolder must be a non-empty string.` — when an untyped caller gives a diff output folder that is not a string or that is blank.
+- `ComparePdfConfigurationError: diffsOutputFolder must point to a directory when it already exists: <path>` — when the diff output folder path exists as a file.
+- `ComparePdfConfigurationError: allowedInputRoot must be a non-empty string.` — when an untyped caller gives an input root that is not a string or that is blank.
+- `ComparePdfConfigurationError: allowedInputRoot does not exist: <path>` — when `allowedInputRoot` points to a path that does not exist.
+- `ComparePdfConfigurationError: allowedInputRoot must point to an existing directory: <path>` — when `allowedInputRoot` points to a file, not to a folder.
+- `ComparePdfConfigurationError: actualPdf must resolve within allowedInputRoot: <path>` / `expectedPdf must resolve within allowedInputRoot: <path>` — when a string PDF input resolves to a path outside the input root.
+- `ComparePdfConfigurationError: excludedAreas must be an array.` — when an untyped caller gives an `excludedAreas` value that is not an array.
+- `ComparePdfConfigurationError: Each excludedAreas entry must be an object.` — when an untyped caller gives an item in `excludedAreas` that is not an object.
+- `ComparePdfConfigurationError: Diff output path must stay within diffsOutputFolder: <path>` — when a generated diff path or an `excludedAreas[].diffFilePath` value resolves to a path outside the diff output folder.
 - `ComparePdfConfigurationError: Compare Threshold must be a finite non-negative integer.` — when `options.compareThreshold` is negative, fractional, `NaN`, or infinite.
 - `ComparePdfConfigurationError: Matching Threshold must be a finite non-negative integer.` — when `excludedAreas[].matchingThreshold` is negative, fractional, `NaN`, or infinite.
 - `ComparePdfConfigurationError: Page Number must be a finite positive integer.` — when `excludedAreas[].pageNumber` is `<= 0`, fractional, `NaN`, or infinite.
-- `ComparePdfConfigurationError: Compare Threshold Percent must be a finite number between 0 and 100.` — when `options.compareThresholdPercent` is negative, greater than 100, `NaN`, or infinite.
-- `ComparePdfConfigurationError: Matching Threshold Percent must be a finite number between 0 and 100.` — when `excludedAreas[].matchingThresholdPercent` is negative, greater than 100, `NaN`, or infinite.
-- `ComparePdfConfigurationError: pages selection matched no rendered page in either PDF.` — when `options.pages` selects only page numbers that exist in neither PDF.
-- `ComparePdfConfigurationError: pages ...` — when `options.pages` is otherwise malformed (empty selection, descending range, non-integer or out-of-safe-range page number, or a selection that exceeds the internal page limit).
-- `ComparePdfConfigurationError: pdfToPngConvertOptions must be an object.` — when an untyped caller passes a non-object render configuration.
-- `ComparePdfConfigurationError: Unsupported pdfToPngConvertOptions properties: ...` — when an untyped caller passes render settings that would skip page content or enable parallel rendering.
-- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must be a non-empty string.` — when an untyped caller passes a non-string or blank render output path.
-- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a directory when it already exists: <path>` — when the configured render output path already exists as a file.
-- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output path itself or an existing ancestor is a symbolic link, or when the post-mkdir leaf check finds a symbolic link at the resolved folder or at the pre-created `actual/` / `expected/` namespace subdirectory (sandbox parity with `diffsOutputFolder`).
-- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a writable directory: <path>` — when the library cannot create the resolved render output folder or its `actual/` / `expected/` namespace subdirectories (for example, a regular file blocks the leaf path).
-- `ComparePdfRenderingError: Failed to render actual PDF pages.` / `Failed to render expected PDF pages.` — when the PDF renderer dependency fails. The original dependency exception is attached as `cause`.
+- `ComparePdfConfigurationError: Compare Threshold Percent must be a finite number between 0 and 100.` — when `options.compareThresholdPercent` is negative, more than 100, `NaN`, or infinite.
+- `ComparePdfConfigurationError: Matching Threshold Percent must be a finite number between 0 and 100.` — when `excludedAreas[].matchingThresholdPercent` is negative, more than 100, `NaN`, or infinite.
+- `ComparePdfConfigurationError: pages selection matched no rendered page in either PDF.` — when `options.pages` selects only page numbers that are not in the actual PDF and not in the expected PDF.
+- `ComparePdfConfigurationError: pages ...` — when `options.pages` is malformed in a different way. Examples: an empty selection, a descending range, a page number that is not a safe integer, or too many selected pages.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions must be an object.` — when an untyped caller gives render options that are not an object.
+- `ComparePdfConfigurationError: Unsupported pdfToPngConvertOptions properties: ...` — when an untyped caller gives render options that skip page content or enable parallel rendering.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must be a non-empty string.` — when an untyped caller gives a render output folder that is not a string or that is blank.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a directory when it already exists: <path>` — when the render output folder path exists as a file.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output folder or any existing folder above it in the path is a symbolic link. The library also throws this error when the check after `mkdir` finds a symbolic link at the resolved folder or at a pre-created `actual/` or `expected/` subfolder. This check gives the same protection as `diffsOutputFolder`.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a writable directory: <path>` — when the library cannot make the resolved render output folder or its `actual/` and `expected/` subfolders. For example, a file can be at the path of the folder.
+- `ComparePdfRenderingError: Failed to render actual PDF pages.` / `Failed to render expected PDF pages.` — when the PDF renderer dependency fails. The `cause` property contains the original dependency exception.
 - `ComparePdfRenderingError: Rendered page content is missing for page: <page-name>.` — when the renderer returns a page without binary PNG content.
-- `ComparePdfComparisonError: Failed to compare rendered PDF page <page-number>.` — when the PNG comparator dependency fails. The original dependency exception is attached as `cause`.
+- `ComparePdfComparisonError: Failed to compare rendered PDF page <page-number>.` — when the PNG comparator dependency fails. The `cause` property contains the original dependency exception.
 
 ### `comparePdfDetailed(actualPdf, expectedPdf, options?)`
 
-Accepts the same parameters as `comparePdf()` and returns
+This function accepts the same parameters as `comparePdf()`. It returns
 `Promise<ComparePdfDetailedResult>`.
 
-Use this API when you need page-level mismatch counts, applied thresholds, diff output paths, or
-deterministic missing-page information without inspecting the filesystem.
+Use this function when you need these data and do not want to examine the file system:
+
+- The mismatch count of each page
+- The thresholds that the comparison applied
+- The paths of the diff images
+- The pages that have no counterpart, in a fixed order
 
 ### `PdfInput`
 
@@ -344,50 +354,51 @@ deterministic missing-page information without inspecting the filesystem.
 type PdfInput = string | Buffer | ArrayBufferLike;
 ```
 
-`string` values are trusted local file paths by default. They are opened and read before rendering.
-For untrusted environments, prefer binary inputs or set `ComparePdfOptions.allowedInputRoot`.
+By default, `string` values are trusted local file paths. The library opens and reads them before the
+renderer starts. In environments that are not trusted, we recommend that you use binary inputs or
+set `ComparePdfOptions.allowedInputRoot`.
 
 ### `ComparePdfOptions`
 
-| Property                 | Type               | Default              | Description                                                                                                                                       |
-| ------------------------ | ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `writeDiffs`             | `boolean`          | `false`              | Enables diff PNG output on disk                                                                                                                   |
-| `diffsOutputFolder`      | `string`           | `./comparePdfOutput` | Trusted diff-output root; validated when provided, and used for written diff PNGs only when `writeDiffs` is `true`                                |
-| `allowedInputRoot`       | `string`           | `undefined`          | Optional root directory that constrains string PDF inputs; when omitted, string paths are trusted caller-controlled inputs                        |
-| `compareThreshold`       | `number`           | `0`                  | Maximum number of differing pixels allowed before comparison fails; must be a finite non-negative integer                                         |
-| `compareThresholdPercent` | `number`          | `undefined`          | Optional percentage threshold (0–100) evaluated alongside `compareThreshold`; a page passes when within EITHER threshold                          |
-| `pages`                  | `string \| number[]` | `undefined`        | Restrict the comparison to a subset of pages (e.g. `"1-3,5,7"` or `[1, 2, 3]`); a selection matching no rendered page throws                       |
-| `excludedAreas`          | `PageExclusion[]`  | `[]`                 | Per-page exclusion zones matched by rendered `pageNumber` (1-based); non-rendered pages are ignored and the first duplicate entry for a page wins |
-| `pdfToPngConvertOptions` | `PdfRenderOptions` | see below            | Options for rendering PDF pages before comparison                                                                                                 |
+| Property                  | Type                 | Default              | Description                                                                                                                                                          |
+| ------------------------- | -------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `writeDiffs`              | `boolean`            | `false`              | Enables diff image writing to disk                                                                                                                                   |
+| `diffsOutputFolder`       | `string`             | `./comparePdfOutput` | Trusted diff output folder. The library validates it when you set it. The library writes diff images to it only when `writeDiffs` is `true`                          |
+| `allowedInputRoot`        | `string`             | `undefined`          | Optional input root. String PDF inputs must resolve to paths in this folder. When omitted, string paths are trusted inputs that the caller controls                  |
+| `compareThreshold`        | `number`             | `0`                  | Pixel threshold: the maximum number of different pixels on an equal page. Must be a finite non-negative integer                                                      |
+| `compareThresholdPercent` | `number`             | `undefined`          | Optional percentage threshold (0–100). The library uses it together with `compareThreshold`. A page is equal when it is in EITHER threshold                          |
+| `pages`                   | `string \| number[]` | `undefined`          | Selects the pages to compare (for example, `"1-3,5,7"` or `[1, 2, 3]`). A selection that contains no rendered page causes an error                                   |
+| `excludedAreas`           | `PageExclusion[]`    | `[]`                 | Page exclusions for each rendered `pageNumber` (1-based). The library ignores entries for pages that are not rendered. For a duplicate page, the first entry applies |
+| `pdfToPngConvertOptions`  | `PdfRenderOptions`   | see below            | Options that the renderer uses before the comparison                                                                                                                 |
 
 ### `ComparePdfDetailedResult`
 
-| Property            | Type                     | Description                                                   |
-| ------------------- | ------------------------ | ------------------------------------------------------------- |
-| `isEqual`           | `boolean`                | `true` when every planned page comparison is within threshold |
-| `actualPageCount`   | `number`                 | Number of rendered pages produced from the actual PDF         |
-| `expectedPageCount` | `number`                 | Number of rendered pages produced from the expected PDF       |
-| `compareThreshold`  | `number`                 | Document-level pixel threshold supplied to the comparison     |
-| `compareThresholdPercent` | `number \| null`   | Document-level percentage threshold supplied, or `null` when unset |
-| `writeDiffs`        | `boolean`                | `true` when diff PNG writing was enabled for the comparison   |
-| `diffsOutputFolder` | `string \| null`         | Resolved base diff output folder, or `null` when disabled     |
-| `pages`             | `ComparePdfPageResult[]` | Page-level outcomes sorted by `pageNumber`                    |
-| `summary`           | `ComparePdfSummary`      | Document-level rollup derived from `pages`                    |
+| Property                  | Type                     | Description                                                                      |
+| ------------------------- | ------------------------ | -------------------------------------------------------------------------------- |
+| `isEqual`                 | `boolean`                | `true` when every planned page comparison is in its threshold                    |
+| `actualPageCount`         | `number`                 | Number of rendered pages from the actual PDF                                     |
+| `expectedPageCount`       | `number`                 | Number of rendered pages from the expected PDF                                   |
+| `compareThreshold`        | `number`                 | Document-level pixel threshold that the comparison used                          |
+| `compareThresholdPercent` | `number \| null`         | Document-level percentage threshold that the caller gave, or `null` when not set |
+| `writeDiffs`              | `boolean`                | `true` when diff image writing was enabled for the comparison                    |
+| `diffsOutputFolder`       | `string \| null`         | Resolved diff output folder, or `null` when diff image writing is disabled       |
+| `pages`                   | `ComparePdfPageResult[]` | Page results in the order of `pageNumber`                                        |
+| `summary`                 | `ComparePdfSummary`      | Document-level summary of `pages`                                                |
 
 ### `ComparePdfPageResult`
 
-| Property           | Type                   | Description                                                         |
-| ------------------ | ---------------------- | ------------------------------------------------------------------- |
-| `pageNumber`       | `number`               | 1-based rendered page number                                        |
-| `status`           | `ComparePdfPageStatus` | `matched`, `mismatched`, `missing-actual`, or `missing-expected`    |
-| `isEqual`          | `boolean`              | `true` when this page is within its applicable threshold            |
-| `threshold`        | `number`               | Pixel threshold actually applied to this page                       |
-| `thresholdPercent` | `number \| null`       | Percentage threshold applied to this page, or `null` when unset     |
-| `mismatchCount`    | `number \| null`       | Comparator mismatch count, or `null` when the page was not compared |
-| `mismatchPercent`  | `number \| null`       | Differing pixels as a percentage of the normalized comparison canvas (larger width × larger height), or `null` when not compared |
-| `diffFilePath`     | `string \| null`       | Diff PNG output path, or `null` when the page was not compared      |
-| `actualPageName`   | `string \| null`       | Renderer-reported actual page image name                            |
-| `expectedPageName` | `string \| null`       | Renderer-reported expected page image name                          |
+| Property           | Type                   | Description                                                                                                           |
+| ------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pageNumber`       | `number`               | 1-based rendered page number                                                                                          |
+| `status`           | `ComparePdfPageStatus` | `matched`, `mismatched`, `missing-actual`, or `missing-expected`                                                      |
+| `isEqual`          | `boolean`              | `true` when this page is in its applicable threshold                                                                  |
+| `threshold`        | `number`               | Pixel threshold that the comparison applied to this page                                                              |
+| `thresholdPercent` | `number \| null`       | Percentage threshold that the comparison applied to this page, or `null` when not set                                 |
+| `mismatchCount`    | `number \| null`       | Mismatch count from the comparator, or `null` when the page was not compared                                          |
+| `mismatchPercent`  | `number \| null`       | Mismatch percentage of the comparison canvas (larger width × larger height), or `null` when the page was not compared |
+| `diffFilePath`     | `string \| null`       | Diff image path, or `null` when the page was not compared or when diff image writing is disabled                      |
+| `actualPageName`   | `string \| null`       | Name of the actual rendered page, from the renderer                                                                   |
+| `expectedPageName` | `string \| null`       | Name of the expected rendered page, from the renderer                                                                 |
 
 ### `ComparePdfPageStatus`
 
@@ -397,88 +408,92 @@ type ComparePdfPageStatus = 'matched' | 'mismatched' | 'missing-actual' | 'missi
 
 ### `ComparePdfSummary`
 
-Document-level rollup on `ComparePdfDetailedResult.summary`, derived entirely from the per-page results.
+`ComparePdfDetailedResult.summary` is a document-level summary. The library calculates it only from
+the page results.
 
-| Property             | Type     | Description                                                          |
-| -------------------- | -------- | ------------------------------------------------------------------- |
-| `totalPages`         | `number` | Number of planned page entries (equals `pages.length`)              |
-| `matchedPages`       | `number` | Pages within their applicable threshold                             |
-| `mismatchedPages`    | `number` | Pages that exceeded their applicable threshold                      |
-| `missingPages`       | `number` | Pages missing a counterpart (`missing-actual` or `missing-expected`) |
-| `maxMismatchPercent` | `number` | Largest per-page `mismatchPercent`; `0` when no page comparison ran |
-| `totalMismatchCount` | `number` | Sum of `mismatchCount` across compared pages                        |
+| Property             | Type     | Description                                                                    |
+| -------------------- | -------- | ------------------------------------------------------------------------------ |
+| `totalPages`         | `number` | Number of planned page entries (the same as `pages.length`)                    |
+| `matchedPages`       | `number` | Number of pages in their applicable threshold                                  |
+| `mismatchedPages`    | `number` | Number of pages that are not in their applicable threshold                     |
+| `missingPages`       | `number` | Number of pages without a counterpart (`missing-actual` or `missing-expected`) |
+| `maxMismatchPercent` | `number` | Largest `mismatchPercent` of a page. `0` when no page was compared             |
+| `totalMismatchCount` | `number` | Sum of `mismatchCount` for the compared pages                                  |
 
 ### `toJsonReport` / `toJUnitReport`
 
-Serialize a `ComparePdfDetailedResult` for CI artifacts and tooling. Both are pure functions
-exported from the package entry point.
+These functions serialize a `ComparePdfDetailedResult` for CI artifacts and tools. Both functions are
+pure functions. The package entry point exports them.
 
 ```typescript
 import { comparePdfDetailed, toJsonReport, toJUnitReport } from 'pdf-visual-compare';
 
 const result = await comparePdfDetailed('./actual.pdf', './expected.pdf');
 
-const json = toJsonReport(result); // pretty-printed JSON, round-trips via JSON.parse
-const junit = toJUnitReport(result); // JUnit XML: one <testcase> per page, <failure> for non-equal pages
+const json = toJsonReport(result); // formatted JSON. JSON.parse gives the same result object.
+const junit = toJUnitReport(result); // JUnit XML: one <testcase> for each page, a <failure> for each page that is not equal
 ```
 
-| Function                | Returns  | Description                                                    |
-| ----------------------- | -------- | ------------------------------------------------------------- |
-| `toJsonReport(result)`  | `string` | Pretty-printed JSON of the full detailed result               |
-| `toJUnitReport(result)` | `string` | JUnit XML report; failures cover mismatched and missing pages |
+| Function                | Returns  | Description                                                        |
+| ----------------------- | -------- | ------------------------------------------------------------------ |
+| `toJsonReport(result)`  | `string` | Formatted JSON of the full detailed result                         |
+| `toJUnitReport(result)` | `string` | JUnit XML report. Failures show mismatched pages and missing pages |
 
 ### `PdfRenderOptions`
 
-`PdfRenderOptions` is this library's stable rendering contract. It is adapted internally to the
-current PDF renderer and is not a direct re-export of an upstream dependency type.
+`PdfRenderOptions` is the stable render contract of this library. The library adapts it internally to
+the current PDF renderer. It is not a direct re-export of a type from a dependency.
 
-| Property             | Type                             | Description                                                                                                                                                                                 |
-| -------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `viewportScale`      | `number`                         | Scale factor applied before rendering                                                                                                                                                       |
-| `disableFontFace`    | `boolean`                        | Use built-in fonts instead of embedded fonts                                                                                                                                                |
-| `useSystemFonts`     | `boolean`                        | Allow system font fallbacks                                                                                                                                                                 |
-| `enableXfa`          | `boolean`                        | Render XFA form data                                                                                                                                                                        |
-| `pdfFilePassword`    | `string`                         | Password for encrypted PDFs                                                                                                                                                                 |
-| `outputFolder`       | `string`                         | Folder for intermediate PNG files; validated as a non-empty path that does not traverse a symbolic link. This library writes under `actual/` and `expected/` subfolders to avoid collisions |
-| `outputFileMaskFunc` | `(pageNumber: number) => string` | Custom PNG filename generator                                                                                                                                                               |
-| `pagesToProcess`     | `number[]`                       | 1-based pages to render                                                                                                                                                                     |
-| `verbosityLevel`     | `number`                         | Renderer verbosity level                                                                                                                                                                    |
+| Property             | Type                             | Description                                                                                                                                                             |
+| -------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `viewportScale`      | `number`                         | Scale factor that the renderer applies before it renders                                                                                                                |
+| `disableFontFace`    | `boolean`                        | Use built-in fonts, not embedded fonts                                                                                                                                  |
+| `useSystemFonts`     | `boolean`                        | Let the renderer use system fonts as fallbacks                                                                                                                          |
+| `enableXfa`          | `boolean`                        | Render XFA form data                                                                                                                                                    |
+| `pdfFilePassword`    | `string`                         | Password for encrypted PDFs                                                                                                                                             |
+| `outputFolder`       | `string`                         | Render output folder. Must be a non-empty path that does not traverse a symbolic link. The library writes to `actual/` and `expected/` subfolders to prevent collisions |
+| `outputFileMaskFunc` | `(pageNumber: number) => string` | Function that makes the PNG file names                                                                                                                                  |
+| `pagesToProcess`     | `number[]`                       | 1-based pages to render                                                                                                                                                 |
+| `verbosityLevel`     | `number`                         | Log level of the renderer                                                                                                                                               |
 
-`comparePdf()` always renders page content and always calls the renderer sequentially. The following
-upstream renderer flags are intentionally excluded from `PdfRenderOptions` and are rejected at runtime
-for untyped JavaScript callers: `returnPageContent`, `returnMetadataOnly`, `processPagesInParallel`,
-and `concurrencyLimit`.
+`comparePdf()` always renders the page content and always calls the renderer sequentially.
+`PdfRenderOptions` does not include these renderer flags: `returnPageContent`, `returnMetadataOnly`,
+`processPagesInParallel`, and `concurrencyLimit`. When an untyped JavaScript caller sets one of
+these flags, the library throws an error.
 
-`pdfToPngConvertOptions.outputFolder` controls renderer intermediate files independently from
-`diffsOutputFolder`, which only constrains diff PNG output paths. When `outputFolder` is set, this
-library writes the two compared PDFs into `actual/` and `expected/` subfolders beneath that root so
-custom filename masks do not collide.
+`pdfToPngConvertOptions.outputFolder` sets the folder for the rendered pages. It is independent of
+`diffsOutputFolder`, which applies only to diff image paths. When you set `outputFolder`, the library
+writes the two PDFs to the `actual/` and `expected/` subfolders of that folder. Thus, custom file
+name masks do not cause collisions.
 
-The render output path is validated with the same sandbox-parity contract applied to
-`diffsOutputFolder`: it must be a non-empty string, must resolve to a directory when the path
-already exists, and may not traverse a symbolic link at the leaf or at any existing ancestor.
-On top of the path-walker check, this library takes ownership of leaf creation: the resolved
-path and both the `actual/` and `expected/` namespace subdirectories are pre-created and then
-re-asserted to be real (non-symlink) directories before any render call runs. That closes the
-residual validate→render TOCTOU window the path walker cannot cover on its own, so an attacker
-cannot replace a future write destination with a symbolic link between validation and the
-renderer's first write (CWE-59 / CWE-61 / CWE-367).
+The library validates the render output folder with the same rules as `diffsOutputFolder`:
+
+- The value must be a non-empty string.
+- If the path exists, it must be a folder.
+- The path must not traverse a symbolic link at the leaf or at any existing folder above it in the path.
+
+The library also makes the leaf folders itself. It makes the resolved folder and the `actual/` and
+`expected/` subfolders. Then it makes sure again that each one is a real folder, not a symbolic link.
+These steps occur before the first render call. The path check alone cannot close the time window
+between the validation and the render (TOCTOU). These steps close that window. Thus, an attacker
+cannot replace a future write destination with a symbolic link before the renderer writes its first
+file (CWE-59 / CWE-61 / CWE-367).
 
 ### `PageExclusion`
 
-| Property            | Type         | Description                                                                                                                                 |
-| ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pageNumber`        | `number`     | 1-based page number this exclusion applies to (`1` = first page, `2` = second page, etc.); must be a finite positive integer                |
-| `excludedAreas`     | `PageArea[]` | Rectangles to exclude from comparison                                                                                                       |
-| `excludedAreaColor` | `RgbColor`   | Fill colour applied to `excludedAreas` before comparison. When omitted, `png-visual-compare` uses its default blue `{ r: 0, g: 0, b: 255 }` |
-| `diffFilePath`      | `string`     | Override the diff image output path for this page; the resolved path must stay inside `diffsOutputFolder`                                   |
-| `matchingThreshold` | `number`     | Per-page pixel threshold, overrides the document-level `compareThreshold` for this page; must be a finite non-negative integer              |
-| `matchingThresholdPercent` | `number` | Per-page percentage threshold (0–100), overrides the document-level `compareThresholdPercent` for this page                            |
+| Property                   | Type         | Description                                                                                                                             |
+| -------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `pageNumber`               | `number`     | 1-based page number for this page exclusion (`1` = first page, `2` = second page, and so on). Must be a finite positive integer         |
+| `excludedAreas`            | `PageArea[]` | Excluded areas: rectangles that the comparison does not examine                                                                         |
+| `excludedAreaColor`        | `RgbColor`   | Fill color for `excludedAreas` before the comparison. When omitted, `png-visual-compare` uses its default blue `{ r: 0, g: 0, b: 255 }` |
+| `diffFilePath`             | `string`     | Diff image path for this page. The resolved path must stay in `diffsOutputFolder`                                                       |
+| `matchingThreshold`        | `number`     | Pixel threshold for this page. Replaces the document-level `compareThreshold` for this page. Must be a finite non-negative integer      |
+| `matchingThresholdPercent` | `number`     | Percentage threshold (0–100) for this page. Replaces the document-level `compareThresholdPercent` for this page                         |
 
-`ExcludedPageArea` remains exported as a backwards-compatible alias of `PageExclusion`.
+`ExcludedPageArea` is also exported. It is a backward-compatible alias of `PageExclusion`.
 
-Entries whose `pageNumber` does not correspond to a rendered page are ignored. If multiple entries
-target the same `pageNumber`, only the first matching entry is used.
+The library ignores an entry when no rendered page has its `pageNumber`. If two or more entries have
+the same `pageNumber`, the library uses only the first entry.
 
 ### `PageArea`
 
@@ -495,7 +510,7 @@ target the same `pageNumber`, only the first matching entry is used.
 
 ### `RgbColor`
 
-`RgbColor` is an RGB colour object used in diff-related configuration:
+`RgbColor` is an RGB color object for the diff options:
 
 ```typescript
 {
