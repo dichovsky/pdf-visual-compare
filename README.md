@@ -51,7 +51,7 @@
 ## Requirements
 
 - Node.js >= 24
-- Supported runtimes: Linux and macOS. CI validates only Linux. macOS is supported, but automated runs do not test it.
+- Supported runtimes: Linux and macOS. CI validates only Linux. macOS is supported, but automated runs do not examine it.
 - Windows is not supported.
 
 ## Docker
@@ -188,7 +188,7 @@ const isEqual = await comparePdf('./actual.pdf', './expected.pdf', options);
 `comparePdf` accepts file paths and these binary inputs: `Buffer`, `ArrayBuffer`, and
 `SharedArrayBuffer`. Before the renderer starts, the library normalizes `SharedArrayBuffer` inputs.
 
-By default, string paths are for trusted local use only. If you must accept path strings from callers,
+By default, string paths are only for trusted local files. If you must accept path strings from callers,
 we recommend that you do one of these steps:
 
 - Set `allowedInputRoot` to keep the paths in a specified folder.
@@ -330,7 +330,7 @@ when `writeDiffs` is `false`.
 - `ComparePdfConfigurationError: Unsupported pdfToPngConvertOptions properties: ...` — when an untyped caller gives render options that skip page content or enable parallel rendering.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must be a non-empty string.` — when an untyped caller gives a render output folder that is not a string or that is blank.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a directory when it already exists: <path>` — when the render output folder path exists as a file.
-- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output folder or any existing folder above it in the path is a symbolic link. The library also throws this error when the check after `mkdir` finds a symbolic link at the resolved folder or at a pre-created `actual/` or `expected/` subfolder. This check gives the same protection as `diffsOutputFolder`.
+- `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must not traverse a symbolic link: <path>` — when the render output folder or any existing folder above it in the path is a symbolic link. The library also throws this error after `mkdir`, when it finds a symbolic link at the resolved folder. A symbolic link at a pre-created `actual/` or `expected/` subfolder also causes this error. This check gives the same protection as `diffsOutputFolder`.
 - `ComparePdfConfigurationError: pdfToPngConvertOptions.outputFolder must point to a writable directory: <path>` — when the library cannot make the resolved render output folder or its `actual/` and `expected/` subfolders. For example, a file can be at the path of the folder.
 - `ComparePdfRenderingError: Failed to render actual PDF pages.` / `Failed to render expected PDF pages.` — when the PDF renderer dependency fails. The `cause` property contains the original dependency exception.
 - `ComparePdfRenderingError: Rendered page content is missing for page: <page-name>.` — when the renderer returns a page without binary PNG content.
