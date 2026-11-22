@@ -261,7 +261,7 @@ CI example: this command makes the job fail when a page is not equal. It also wr
 npx pdf-visual-compare actual.pdf expected.pdf --fail-on-diff --format junit > pdf-report.xml
 ```
 
-The CLI is a thin wrapper around `comparePdfDetailed()`. Each flag sets a `ComparePdfOptions` property:
+The CLI calls `comparePdfDetailed()`. These flags set comparison options:
 
 - `--threshold` sets `compareThreshold`.
 - `--threshold-percent` sets `compareThresholdPercent`.
@@ -376,8 +376,8 @@ set `ComparePdfOptions.allowedInputRoot`.
 | Property                  | Type                     | Description                                                                      |
 | ------------------------- | ------------------------ | -------------------------------------------------------------------------------- |
 | `isEqual`                 | `boolean`                | `true` when every planned page comparison is in its threshold                    |
-| `actualPageCount`         | `number`                 | Number of rendered pages from the actual PDF                                     |
-| `expectedPageCount`       | `number`                 | Number of rendered pages from the expected PDF                                   |
+| `actualPageCount`         | `number`                 | Number of actual pages found before the `pages` filter                           |
+| `expectedPageCount`       | `number`                 | Number of expected pages found before the `pages` filter                         |
 | `compareThreshold`        | `number`                 | Document-level pixel threshold that the comparison used                          |
 | `compareThresholdPercent` | `number \| null`         | Document-level percentage threshold that the caller gave, or `null` when not set |
 | `writeDiffs`              | `boolean`                | `true` when diff image writing was enabled for the comparison                    |

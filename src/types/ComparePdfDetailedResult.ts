@@ -11,12 +11,12 @@ export type ComparePdfDetailedResult = {
     isEqual: boolean;
 
     /**
-     * Number of rendered pages from the actual PDF input.
+     * Number of actual pages found before the comparison applies the `pages` filter.
      */
     actualPageCount: number;
 
     /**
-     * Number of rendered pages from the expected PDF input.
+     * Number of expected pages found before the comparison applies the `pages` filter.
      */
     expectedPageCount: number;
 

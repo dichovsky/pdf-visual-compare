@@ -27,9 +27,9 @@ export type ComparePdfSummary = {
     missingPages: number;
 
     /**
-     * Largest `mismatchPercent` of the compared pages. `0` when no page was compared, for
-     * example when every page has no counterpart. To know if the pages had no differences or
-     * if no page was compared, use `missingPages` and `mismatchedPages`.
+     * Largest `mismatchPercent` of the compared pages. The value is `0` if no pages were compared.
+     * The number of compared pages is `totalPages - missingPages`.
+     * Use `totalMismatchCount` for the number of different pixels.
      */
     maxMismatchPercent: number;
 

@@ -49,7 +49,8 @@ export type PdfRenderOptions = {
     outputFileMaskFunc?: (pageNumber: number) => string;
 
     /**
-     * 1-based page numbers to render. When omitted, the renderer renders all pages.
+     * 1-based page numbers for the renderer to consider. When omitted, it considers all pages.
+     * The comparison can further limit the selection with `ComparePdfOptions.pages`.
      */
     pagesToProcess?: number[];
 

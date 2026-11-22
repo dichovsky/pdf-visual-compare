@@ -7,7 +7,7 @@ import type { PdfRenderOptions } from './PdfRenderOptions.js';
 export type ComparePdfOptions = {
     /**
      * When `true`, the comparison writes diff images to disk.
-     * When omitted or `false`, the comparison stays in memory and writes no diff images.
+     * When omitted or `false`, the comparison writes no diff images. The renderer can still write PNGs to its output folder.
      * @default false
      */
     writeDiffs?: boolean;
