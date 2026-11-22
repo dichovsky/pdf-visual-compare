@@ -4,7 +4,7 @@
  * These options are part of the public contract of this library. The library adapts them
  * internally to the current PDF render dependency. The options intentionally do not include
  * settings that disable page content or enable parallel rendering. This library always renders
- * the pages sequentially. Parallel rendering can cause comparison errors.
+ * the pages sequentially, so that the comparison is safe.
  */
 export type PdfRenderOptions = {
     /**
