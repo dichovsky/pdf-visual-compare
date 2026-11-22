@@ -138,31 +138,31 @@ Categories:
 | exit code            | Technical name | The number that the CLI process gives to the shell when it stops.                                                                               | "return code", "status code"                       |
 | comparison           | Technical name | The operation that `comparePdf()` or `comparePdfDetailed()` does. The dictionary does not approve this noun, but the project uses it as a term. | "diff" (as a noun for the operation)               |
 | file                 | Technical name | A file in a file system.                                                                                                                        | "document" (for a file on disk)                    |
-| option               | Technical name | A property of `ComparePdfOptions` or `PdfRenderOptions`, or a CLI flag.                                                                         | "setting" (for an option property)                 |
-| job, check           | Technical name | A GitHub Actions job, and the status check that the job reports.                                                                                | "build" (for a CI job)                             |
+| option               | Technical name | A property of `ComparePdfOptions`, `PdfRenderOptions`, or `PageExclusion`, or a CLI flag.                                                       | "setting" (for an option property)                 |
+| job, check           | Technical name | A GitHub Actions job and its status check. "Check" also means a local verification step, for example the type check.                            | "build" (for a CI job)                             |
 | pull request         | Technical name | A GitHub pull request.                                                                                                                          | "PR" in prose, "merge request"                     |
-| exact                | Exception      | Used only for check names, which must agree character by character. No approved word has this meaning.                                          | "same" (for this meaning)                          |
+| exact                | Exception      | Used only for check names, which must agree character by character. No STE word has this meaning.                                               | "same" (for this meaning)                          |
 | trusted              | Exception      | A security term: the caller is responsible for the safety of the path. No STE word has this meaning.                                            | "safe" (for this meaning)                          |
 | supported            | Exception      | A compatibility term: the maintainers keep the platform or the runtime operational. No STE word has this meaning.                               | "works on"                                         |
 
 ### Verbs
 
-| Term                                   | Category       | Meaning                                                                                     | Do not use                                     |
-| -------------------------------------- | -------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| compare                                | Approved word  | Examine two items for differences.                                                          | "diff" (as a verb), "check"                    |
-| pass, fail                             | Technical verb | A check, a test, or a job gives a good result or a bad result. Do not use for page results. | "succeed" for checks, "pass" for an equal page |
-| render                                 | Technical verb | Make a PNG image from a PDF page.                                                           | "convert", "rasterize", "draw"                 |
-| throw                                  | Technical verb | Stop a function with an error.                                                              | "raise"                                        |
-| return                                 | Technical verb | Give a value back to the caller of a function.                                              | "yield" (for this meaning)                     |
-| resolve                                | Technical verb | Change a relative path to an absolute path. Also: a promise gives its value.                | -                                              |
-| run                                    | Technical verb | Start a command, a script, or a test.                                                       | "execute", "invoke" (in prose)                 |
-| install, build, compile, lint, publish | Technical verb | Software operations with their usual meaning.                                               | -                                              |
-| validate                               | Technical verb | Examine a value and throw an error when the value is not correct.                           | "verify" (for input values)                    |
-| enable, disable                        | Technical verb | Set an option so that a function operates or does not operate.                              | "turn on", "turn off"                          |
-| serialize, parse, normalize            | Technical verb | Data operations with their usual meaning.                                                   | -                                              |
-| write, read                            | Approved word  | Put data in a file, or get data from a file.                                                | "emit", "dump", "load" (for files)             |
-| set                                    | Approved word  | Give an option a value.                                                                     | "configure" (for one option)                   |
-| let                                    | Approved word  | Use instead of "allow" and "enable" when the meaning is "permit".                           | "allow"                                        |
+| Term                                   | Category       | Meaning                                                                                     | Do not use                                          |
+| -------------------------------------- | -------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| compare                                | Approved word  | Examine two items for differences.                                                          | "diff" (as a verb), "check" (as a verb for compare) |
+| pass, fail                             | Technical verb | A check, a test, or a job gives a good result or a bad result. Do not use for page results. | "succeed" for checks, "pass" for an equal page      |
+| render                                 | Technical verb | Make a PNG image from a PDF page.                                                           | "convert", "rasterize", "draw"                      |
+| throw                                  | Technical verb | Stop a function with an error.                                                              | "raise"                                             |
+| return                                 | Technical verb | Give a value back to the caller of a function.                                              | "yield" (for this meaning)                          |
+| resolve                                | Technical verb | Change a relative path to an absolute path. Also: a promise gives its value.                | -                                                   |
+| run                                    | Technical verb | Start a command, a script, or a test.                                                       | "execute", "invoke" (in prose)                      |
+| install, build, compile, lint, publish | Technical verb | Software operations with their usual meaning.                                               | -                                                   |
+| validate                               | Technical verb | Examine a value and throw an error when the value is not correct.                           | "verify" (for input values)                         |
+| enable, disable                        | Technical verb | Set an option so that a function operates or does not operate.                              | "turn on", "turn off"                               |
+| serialize, parse, normalize            | Technical verb | Data operations with their usual meaning.                                                   | -                                                   |
+| write, read                            | Approved word  | Put data in a file, or get data from a file.                                                | "emit", "dump", "load" (for files)                  |
+| set                                    | Approved word  | Give an option a value.                                                                     | "configure" (for one option)                        |
+| let                                    | Approved word  | Use instead of "allow" and "enable" when the meaning is "permit".                           | "allow"                                             |
 
 ## Validation
 
