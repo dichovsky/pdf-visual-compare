@@ -2,9 +2,9 @@
  * Options that the renderer uses before the visual comparison.
  *
  * These options are part of the public contract of this library. The library adapts them
- * internally to the current PDF render dependency. The options intentionally do not include
- * settings that disable page content or enable parallel rendering. This library always renders
- * the pages sequentially, so that the comparison is safe.
+ * internally to the current PDF render dependency. This library always renders the pages
+ * sequentially, so that the comparison is safe. Thus, the type intentionally does not include
+ * options that disable page content or enable parallel rendering.
  */
 export type PdfRenderOptions = {
     /**

@@ -59,7 +59,7 @@ export type ComparePdfPageResult = {
      *
      * When `compareThresholdPercent` or a per-page `matchingThresholdPercent` is set, a `matched`
      * page can also have a diff image path. The diff image then shows the different pixels that
-     * the percentage threshold permitted. To find failed pages, use `isEqual` or `status`, not
+     * the percentage threshold permitted. To find the pages that are not equal, use `isEqual` or `status`, not
      * `diffFilePath`.
      */
     diffFilePath: string | null;

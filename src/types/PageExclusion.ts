@@ -2,7 +2,7 @@ import type { PageArea } from './PageArea.js';
 import type { RgbColor } from './RgbColor.js';
 
 /**
- * A page exclusion: the excluded areas and the settings for one page of the PDF comparison.
+ * A page exclusion: the excluded areas and the options for one page of the PDF comparison.
  *
  * Each entry applies to the PDF page with the same `pageNumber` (1-based):
  * `pageNumber: 1` is the first page, `pageNumber: 2` is the second page, and so on.

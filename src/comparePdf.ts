@@ -13,7 +13,7 @@ import type { PdfInput } from './types/PdfInput.js';
 import type { PdfToPngOptions, PngPageOutput } from 'pdf-to-png-converter';
 
 /**
- * Compares two PDF inputs and returns a boolean. The boolean tells if the two PDFs are equal.
+ * Compares two PDF inputs and returns a boolean. The boolean is `true` when the two PDFs are equal.
  *
  * The supported PDF inputs are file paths, `Buffer`, `ArrayBuffer`, and `SharedArrayBuffer`.
  * By default, string paths are trusted inputs that the caller controls. To keep them in a
