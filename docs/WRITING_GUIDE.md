@@ -18,7 +18,7 @@ These files follow this guide:
 
 - `README.md`
 - `CONTRIBUTING.md`
-- `docs/TYPESCRIPT_7_MIGRATION.md` and this guide
+- This guide
 - Public API doc comments in `src/comparePdf.ts`, `src/index.ts`, `src/types/`, `src/errors/`, and
   `src/serialize/`
 
@@ -27,13 +27,11 @@ These files do not follow this guide:
 | File or text                                                           | Reason                                                                                  |
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `CHANGELOG.md`, `BACKLOG-ARCHIVE.md`, `docs/pdf-diff-feature-audit.md` | Historical records. Do not change past entries.                                         |
-| `CODEMAP.md`                                                           | Generated file. Run `npm run codemap` to update it.                                     |
 | `LICENSE`                                                              | Legal text.                                                                             |
 | `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`            | Agent instruction files. A separate change can migrate them.                            |
 | Error messages, CLI help text, and report text                         | Runtime strings. Tests and callers can depend on the wording.                           |
 | Quoted runtime strings in the documentation                            | Each quote must stay the same as the runtime string.                                    |
 | `BACKLOG.md`                                                           | Its agent rule asks for brief descriptions. That repository rule has priority over STE. |
-| Dated records in `docs/TYPESCRIPT_7_MIGRATION.md`                      | The "Verification" and "Installation note" sections are history.                        |
 
 ## Writing rules
 
@@ -105,7 +103,7 @@ Categories:
 | `pdf-to-png-converter`                                                     | Product name | The dependency that renders PDF pages.                   | "the converter"                    |
 | `png-visual-compare`                                                       | Product name | The dependency that compares two PNG images.             | "pixelmatch" (a different package) |
 | PDF.js, `@napi-rs/canvas`                                                  | Product name | The renderer libraries that `pdf-to-png-converter` uses. | -                                  |
-| Node.js, npm, TypeScript, Vitest, ESLint, Prettier, Docker, GitHub Actions | Product name | Tools that this repository uses.                         | "Node" in descriptive text         |
+| Node.js, npm, TypeScript, Vitest, Oxlint, Oxfmt, Docker, GitHub Actions | Product name | Tools that this repository uses.                         | "Node" in descriptive text         |
 
 ### Comparison concepts
 
@@ -169,25 +167,20 @@ Categories:
 Run these commands after you change prose:
 
 ```sh
-npx prettier --check <changed files>
+npm run format:check
 npm run lint
-npm run codemap
-npm run codemap:check
 npm run build
 npm run test:types
 npx vitest run
 ```
 
-- Run `npm run codemap` after you change a public API doc comment. `CODEMAP.md` contains the doc
-  comment text.
 - Make sure that `git diff src/` shows changes to comment lines only.
-- Make sure that the `CODEMAP.md` diff changes only `jsdoc`, `line`, and `sourceHash` values.
-- Before you run `prettier --write` on a file, run `prettier --check` on the unchanged file. If the
-  unchanged file does not obey Prettier, format only the lines that you change.
+- Before you format a file, check its original formatting with `npm exec -- oxfmt --check <file>`.
+  Keep formatting changes in the scope of the edit.
 
 ## Limits of automated checks
 
-- Prettier, ESLint, and the type checker do not examine the writing rules.
+- Oxfmt, Oxlint, and the type checker do not examine the writing rules.
 - A count of the words in a sentence does not show that the sentence is correct STE.
 - No automated check in this repository examines the dictionary words or the link anchors.
   Examine the diff manually.

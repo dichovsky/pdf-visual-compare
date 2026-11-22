@@ -1,3 +1,4 @@
+import { mockPdfDocuments } from './helpers/mockPdfDocuments.js';
 import { existsSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import { mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -44,9 +45,11 @@ test(`should apply exclusions and thresholds by pageNumber when rendering select
     const actualPageContent = Buffer.from('actual-page-2');
     const expectedPageContent = Buffer.from('expected-page-2');
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'actual-selected-page.png', pageNumber: 2, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'expected-selected-page.png', pageNumber: 2, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'actual-selected-page.png', pageNumber: 2, content: actualPageContent }],
+        [{ name: 'expected-selected-page.png', pageNumber: 2, content: expectedPageContent }],
+    );
     comparePngMock.mockReturnValueOnce(5);
 
     await expect(
@@ -91,9 +94,11 @@ test(`should use the first matching exclusion deterministically for selected sub
     const diffsOutputFolder = resolve(`./test-results/compare/11-1b`);
     const firstDiffFilePath = resolve(diffsOutputFolder, 'first-page-2.png');
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'actual-selected-page.png', pageNumber: 2, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'expected-selected-page.png', pageNumber: 2, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'actual-selected-page.png', pageNumber: 2, content: actualPageContent }],
+        [{ name: 'expected-selected-page.png', pageNumber: 2, content: expectedPageContent }],
+    );
     comparePngMock.mockReturnValueOnce(1);
 
     await expect(
@@ -137,11 +142,11 @@ test(`should pair rendered pages by pageNumber instead of rendered file name`, a
     const actualPageContent = Buffer.from('actual-page-1');
     const expectedPageContent = Buffer.from('expected-page-1');
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'custom-actual-mask.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([
-            { name: 'totally-different-expected-mask.png', pageNumber: 1, content: expectedPageContent },
-        ]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'custom-actual-mask.png', pageNumber: 1, content: actualPageContent }],
+        [{ name: 'totally-different-expected-mask.png', pageNumber: 1, content: expectedPageContent }],
+    );
     comparePngMock.mockReturnValueOnce(0);
 
     await expect(
@@ -167,9 +172,7 @@ test(`should pair rendered pages by pageNumber instead of rendered file name`, a
 });
 
 test(`should return false for missing counterpart pages without invoking the PNG comparator`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-2.png', pageNumber: 2, content: Buffer.from('actual-page-2') }])
-        .mockResolvedValueOnce([]);
+    mockPdfDocuments(pdfToPngMock, [{ name: 'page-2.png', pageNumber: 2, content: Buffer.from('actual-page-2') }], []);
 
     await expect(comparePdf(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'))).resolves.toBeFalsy();
 
@@ -182,9 +185,11 @@ test(`should allow per-page diffFilePath overrides inside diffsOutputFolder`, as
     const diffsOutputFolder = resolve(`./test-results/compare/11-3`);
     const diffFilePath = resolve(diffsOutputFolder, 'nested', 'diff_page-1.png');
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }],
+        [{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }],
+    );
     comparePngMock.mockReturnValueOnce(0);
 
     await expect(
@@ -207,9 +212,11 @@ test(`should reject per-page diffFilePath overrides that escape diffsOutputFolde
     const expectedPageContent = Buffer.from('expected-page-1');
     const diffsOutputFolder = resolve(`./test-results/compare/11-4`);
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }],
+        [{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }],
+    );
 
     const comparePromise = comparePdf(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
         writeDiffs: true,
@@ -236,9 +243,11 @@ test(`should reject generated diff paths that escape diffsOutputFolder`, async (
     const expectedPageContent = Buffer.from('expected-page-1');
     const diffsOutputFolder = resolve(`./test-results/compare/11-5`);
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: '../escaped.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'expected-page-1.png', pageNumber: 1, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: '../escaped.png', pageNumber: 1, content: actualPageContent }],
+        [{ name: 'expected-page-1.png', pageNumber: 1, content: expectedPageContent }],
+    );
 
     const comparePromise = comparePdf(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
         writeDiffs: true,
@@ -264,9 +273,11 @@ test(`should wrap diff output directory creation failures`, async () => {
     await mkdir(diffsOutputFolder, { recursive: true });
     await writeFile(blockingPath, 'not-a-directory');
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }],
+        [{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }],
+    );
 
     try {
         const comparePromise = comparePdf(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
@@ -329,9 +340,11 @@ test(`should reject symlinked diff paths that escape diffsOutputFolder`, async (
     mkdirSync(outsideFolder, { recursive: true });
     symlinkSync(outsideFolder, symlinkPath);
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }],
+        [{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }],
+    );
 
     const comparePromise = comparePdf(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
         writeDiffs: true,
@@ -366,9 +379,11 @@ test(`should reject diff output paths that target a symlinked file inside diffsO
     mkdirSync(outsideFolder, { recursive: true });
     symlinkSync(resolve(outsideFolder, 'escaped.png'), symlinkedFilePath);
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }],
+        [{ name: 'page-1-expected.png', pageNumber: 1, content: expectedPageContent }],
+    );
 
     const comparePromise = comparePdf(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
         writeDiffs: true,
@@ -393,9 +408,11 @@ test(`should ignore exclusions for pages that were not rendered`, async () => {
     const actualPageContent = Buffer.from('actual-page-2');
     const expectedPageContent = Buffer.from('expected-page-2');
 
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'selected-page-2.png', pageNumber: 2, content: actualPageContent }])
-        .mockResolvedValueOnce([{ name: 'selected-page-2-expected.png', pageNumber: 2, content: expectedPageContent }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'selected-page-2.png', pageNumber: 2, content: actualPageContent }],
+        [{ name: 'selected-page-2-expected.png', pageNumber: 2, content: expectedPageContent }],
+    );
     comparePngMock.mockReturnValueOnce(0);
 
     await expect(

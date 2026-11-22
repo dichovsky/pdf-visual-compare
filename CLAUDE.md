@@ -6,11 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```sh
 npm run build          # Compile TypeScript to ./out (runs clean first)
-npm run lint           # Run ESLint
-npm run lint:fix       # Run ESLint with auto-fix
+npm run lint           # Run Oxlint and fail on warnings
+npm run lint:fix       # Apply Oxlint fixes
+npm run format         # Format files with Oxfmt
+npm run format:check   # Verify formatting
 npm run test:types     # Type-check all repo TypeScript, including the built-package fixture
 npm run test:artifacts # Verify built entry points/export map behavior and npm pack contents
-npm test               # Full test suite: clean + lint + license check + build + type/artifact checks + vitest with coverage
+npm test               # Check formatting, lint, licenses, build, types, package artifacts and test coverage
 npx vitest run         # Run tests without the pre-steps (faster for iteration)
 npx vitest run __tests__/1.compare.equal.pdf.files.test.ts  # Run a single test file
 npm run clean          # Remove ./out, ./coverage, ./test-results, ./comparePdfOutput
@@ -19,7 +21,7 @@ node ./out/cli.js a.pdf b.pdf  # Run the built CLI (published entry point: `npx 
 
 Tests have a 90-second timeout (`vitest.config.mjs`) because PDF-to-PNG conversion is slow. Coverage thresholds are enforced (100% statements/lines/functions, 90% branches).
 
-**Toolchain is split on purpose — do not "correct" the aliases.** `build` and `test:types` invoke the TypeScript 7 native compiler by full path (`node ./node_modules/@typescript/native/bin/tsc`), where `@typescript/native` is an npm alias for `typescript@7`. The `typescript` devDependency is itself an alias for `@typescript/typescript6`, because TypeScript 7 removed the legacy JavaScript compiler API that `scripts/generate-codemap.ts` (`createProgram` + TypeChecker) and `typescript-eslint` (peer range `<6.1.0`) still need. Replacing either alias with a plain `typescript` dependency breaks codemap generation and linting. In `node_modules/.bin`, `tsc` is TypeScript 7 and `tsc6` is TypeScript 6. See `docs/TYPESCRIPT_7_MIGRATION.md`.
+Use Node 26 or newer. The local `typescript` dependency supplies the TypeScript 7 compiler for both the build and type checks.
 
 ## Architecture
 
@@ -38,7 +40,7 @@ This is a small TypeScript library published to npm. Source lives in `src/`, com
 
 - `pdfToPng` document renders must remain sequential. `Promise.all` causes "Invalid page request" errors when PDFs have different page counts due to shared PDF.js worker state.
 - Page rendering is intentionally bounded-memory: plan first, then render/compare per page instead of holding both full documents in memory.
-- Page comparison is still sequential even after upgrading to `png-visual-compare` 6.x. That dependency now exposes async/ported comparison entry points, but this library should not parallelize page comparison without a benchmark and safety review.
+- Keep page comparison sequential. Benchmark and review the renderer and comparator together before introducing parallel comparisons.
 - All caller-supplied filesystem roots (`allowedInputRoot`, `diffsOutputFolder`, `pdfToPngConvertOptions.outputFolder`) share a single sandbox-parity contract: non-empty string, must resolve to a directory when it already exists, and may not traverse a symbolic link at the leaf or any existing ancestor. The shared symlink-rejection + path-containment primitives live in `src/internal/securePath.ts` — keep CWE-59 / CWE-61 fixes consolidated there.
 - `pdfToPngConvertOptions.outputFolder` additionally takes library ownership of leaf-directory creation: the resolved path and the `actual/`/`expected/` namespace subdirectories are pre-created and re-asserted (`lstat`) to be real directories during normalization, closing the residual validate→render TOCTOU window (CWE-367) that the path walker cannot cover. Replicate that pattern for any future caller that lets a third-party writer create files inside a user-supplied folder.
 
@@ -61,7 +63,7 @@ This is a small TypeScript library published to npm. Source lives in `src/`, com
 
 **Dependencies:**
 
-- `pdf-to-png-converter` — renders PDF pages to PNG buffers using PDF.js plus prebuilt `@napi-rs/canvas` binaries (Node `>=24`)
+- `pdf-to-png-converter` — renders PDF pages to PNG buffers using PDF.js plus prebuilt `@napi-rs/canvas` binaries
 - `png-visual-compare` — pixel-level PNG comparison with exclusion zone support
 
 ## Test Structure
@@ -95,13 +97,5 @@ Ctx: Formatting the npm 12 artifact fix
 Err: prettier --write reformatted an unrelated pre-existing line in the same file
 Cause: Ran the formatter without knowing the file's baseline was already prettier-dirty
 Fix: Reverted the adjacent hunk; confirmed parity against the stashed HEAD version
-Rule: Check prettier on the HEAD version before --write, so incidental reformats stay out of the diff
-```
-
-```text
-Ctx: Release commit for 4.1.0
-Err: codemap:check went stale right after passing, with no source change
-Cause: CODEMAP.md embeds repo.version, so any version bump invalidates it
-Fix: Ran npm run codemap in the release commit; sourceHash unchanged proved the API surface held
-Rule: Always regenerate CODEMAP.md in a version-bump commit
+Rule: Check the formatting of the original file before applying fixes
 ```

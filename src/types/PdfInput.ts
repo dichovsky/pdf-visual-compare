@@ -6,8 +6,7 @@
  * - `Buffer`: binary PDF content from Node.js
  * - `ArrayBufferLike`: binary PDF content, which includes `ArrayBuffer` and `SharedArrayBuffer`
  *
- * The library normalizes `SharedArrayBuffer` inputs to `ArrayBuffer` before it gives them to the
- * PDF renderer. In environments that are not trusted, we recommend that you use binary inputs or
- * set `allowedInputRoot`.
+ * The renderer copies `SharedArrayBuffer` inputs into unshared memory before PDF.js uses them.
+ * In environments that are not trusted, use binary inputs or set `allowedInputRoot`.
  */
 export type PdfInput = string | Buffer | ArrayBufferLike;

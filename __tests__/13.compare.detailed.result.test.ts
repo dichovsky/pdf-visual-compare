@@ -1,3 +1,4 @@
+import { mockPdfDocuments } from './helpers/mockPdfDocuments.js';
 import { resolve } from 'node:path';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -25,12 +26,25 @@ test(`should return structured page results with thresholds, mismatches, and dif
     const diffsOutputFolder = resolve(`./test-results/compare/13-1`);
     const pageTwoDiffFilePath = resolve(diffsOutputFolder, 'page-2-custom.png');
 
-    pdfToPngMock
-        .mockResolvedValueOnce([
-            { name: 'actual-page-1.png', pageNumber: 1, width: 100, height: 100, content: Buffer.from('actual-page-1') },
-            { name: 'actual-page-2.png', pageNumber: 2, width: 100, height: 100, content: Buffer.from('actual-page-2') },
-        ])
-        .mockResolvedValueOnce([
+    mockPdfDocuments(
+        pdfToPngMock,
+        [
+            {
+                name: 'actual-page-1.png',
+                pageNumber: 1,
+                width: 100,
+                height: 100,
+                content: Buffer.from('actual-page-1'),
+            },
+            {
+                name: 'actual-page-2.png',
+                pageNumber: 2,
+                width: 100,
+                height: 100,
+                content: Buffer.from('actual-page-2'),
+            },
+        ],
+        [
             {
                 name: 'expected-page-1.png',
                 pageNumber: 1,
@@ -45,7 +59,8 @@ test(`should return structured page results with thresholds, mismatches, and dif
                 height: 100,
                 content: Buffer.from('expected-page-2'),
             },
-        ]);
+        ],
+    );
     comparePngMock.mockReturnValueOnce(0).mockReturnValueOnce(7);
 
     await expect(
@@ -107,9 +122,11 @@ test(`should return structured page results with thresholds, mismatches, and dif
 });
 
 test(`should report missing expected pages without invoking the PNG comparator`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'actual-page-2.png', pageNumber: 2, content: Buffer.from('actual-page-2') }])
-        .mockResolvedValueOnce([]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'actual-page-2.png', pageNumber: 2, content: Buffer.from('actual-page-2') }],
+        [],
+    );
 
     await expect(comparePdfDetailed(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'))).resolves.toEqual({
         isEqual: false,
@@ -147,11 +164,11 @@ test(`should report missing expected pages without invoking the PNG comparator`,
 });
 
 test(`should report missing actual pages deterministically`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([
-            { name: 'expected-page-4.png', pageNumber: 4, content: Buffer.from('expected-page-4') },
-        ]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [],
+        [{ name: 'expected-page-4.png', pageNumber: 4, content: Buffer.from('expected-page-4') }],
+    );
 
     await expect(comparePdfDetailed(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'))).resolves.toEqual({
         isEqual: false,
@@ -187,11 +204,11 @@ test(`should report missing actual pages deterministically`, async () => {
 });
 
 test(`should order selected subset pages by pageNumber and surface missing counterparts deterministically`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'actual-page-4.png', pageNumber: 4, content: Buffer.from('actual-page-4') }])
-        .mockResolvedValueOnce([
-            { name: 'expected-page-2.png', pageNumber: 2, content: Buffer.from('expected-page-2') },
-        ]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'actual-page-4.png', pageNumber: 4, content: Buffer.from('actual-page-4') }],
+        [{ name: 'expected-page-2.png', pageNumber: 2, content: Buffer.from('expected-page-2') }],
+    );
 
     await expect(
         comparePdfDetailed(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
@@ -250,7 +267,7 @@ test(`should keep comparePdf as a boolean wrapper over the detailed result`, asy
     const actualPages = [{ name: 'actual-page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') }];
     const expectedPages = [{ name: 'expected-page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') }];
 
-    pdfToPngMock.mockResolvedValueOnce(actualPages).mockResolvedValueOnce(expectedPages);
+    mockPdfDocuments(pdfToPngMock, actualPages, expectedPages);
     comparePngMock.mockReturnValueOnce(3);
 
     const detailedResult = await comparePdfDetailed(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
@@ -259,7 +276,7 @@ test(`should keep comparePdf as a boolean wrapper over the detailed result`, asy
 
     pdfToPngMock.mockReset();
     comparePngMock.mockReset();
-    pdfToPngMock.mockResolvedValueOnce(actualPages).mockResolvedValueOnce(expectedPages);
+    mockPdfDocuments(pdfToPngMock, actualPages, expectedPages);
     comparePngMock.mockReturnValueOnce(3);
 
     await expect(

@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Breaking change.** The library and CLI now require Node.js 26 or later. Upgrade Node.js before you install the next major release.
+- Development uses TypeScript 7, Oxlint, and Oxfmt. The generated codemap and its npm commands have been retired.
 - Rewrote the repository documentation and the public API doc comments with the ASD-STE100 Simplified Technical English (Issue 9) writing rules as the guide. Added `docs/WRITING_GUIDE.md` with the terminology and the writing rules for this repository.
 
 ## [4.1.0] - 2026-07-30
@@ -27,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Upgraded runtime dependencies: `pdf-to-png-converter` `~4.1.1` → `~4.2.0` and `png-visual-compare` `~6.2.0` → `~6.3.0`. No change to this package's public API or to the supported Node.js range (`>=24`).
-- Build toolchain: the published `out/` artifact and repository type checks are now produced by the TypeScript 7 native compiler instead of TypeScript 6. Emitted JavaScript and declaration files are byte-identical under both compilers, so there is no change to the published API, runtime behavior, or supported Node.js versions. TypeScript remains a development dependency only. See [docs/TYPESCRIPT_7_MIGRATION.md](docs/TYPESCRIPT_7_MIGRATION.md).
+- Build toolchain: the published `out/` artifact and repository type checks are now produced by the TypeScript 7 native compiler instead of TypeScript 6. Emitted JavaScript and declaration files are byte-identical under both compilers, so there is no change to the published API, runtime behavior, or supported Node.js versions. TypeScript remains a development dependency only. See the [4.1.0 migration notes](https://github.com/dichovsky/pdf-visual-compare/blob/v4.1.0/docs/TYPESCRIPT_7_MIGRATION.md).
 
 ## [4.0.0] - 2026-06-19
 

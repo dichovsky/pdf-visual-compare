@@ -44,7 +44,9 @@ test(`rejects selections that would expand beyond the maximum, via range, single
     // A range just under the cap combined with a single entry that pushes it over.
     expect(() => parsePageSelection('1-1000000,1000002')).toThrow('exceeds the maximum of 1000000 pages');
     // Array length is checked up front without materializing entries.
-    expect(() => parsePageSelection(new Array(1_000_001))).toThrow('exceeds the maximum of 1000000 pages');
+    const sparseSelection: number[] = [];
+    sparseSelection.length = 1_000_001;
+    expect(() => parsePageSelection(sparseSelection)).toThrow('exceeds the maximum of 1000000 pages');
 });
 
 test(`rejects page numbers beyond the safe integer range`, () => {

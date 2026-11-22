@@ -15,12 +15,6 @@ const MAX_SELECTED_PAGES = 1_000_000;
 const SPEC_PREVIEW_LENGTH = 80;
 
 /**
- * Accepted shape of the `pages` selection option: either a comma-separated range spec
- * (e.g. `"1-3,5,7"`) or an explicit array of 1-based page numbers (e.g. `[1, 2, 3, 5, 7]`).
- */
-export type PageSelection = string | readonly number[];
-
-/**
  * Normalizes a page selection into a sorted, de-duplicated array of 1-based page numbers.
  *
  * Fails fast with a {@link ComparePdfConfigurationError} on any malformed entry (non-integer,
@@ -82,7 +76,9 @@ function fromSpecString(spec: string): number[] {
         }
 
         if (!SINGLE_PAGE.test(token)) {
-            throw new ComparePdfConfigurationError(`pages spec "${previewSpec(spec)}" has an invalid entry "${token}".`);
+            throw new ComparePdfConfigurationError(
+                `pages spec "${previewSpec(spec)}" has an invalid entry "${token}".`,
+            );
         }
 
         const page = Number(token);

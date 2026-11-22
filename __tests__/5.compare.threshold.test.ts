@@ -1,13 +1,32 @@
 import { resolve } from 'node:path';
-import { expect, test } from 'vitest';
+import { pdfToPng } from 'pdf-to-png-converter';
+import { comparePng } from 'png-visual-compare';
+import { beforeAll, expect, test } from 'vitest';
 import { comparePdf } from '../src';
 
-const actualDiffsAmount = 14058;
+let largestPageMismatch: number;
+
+beforeAll(async () => {
+    // Font rasterization can change between renderers and platforms. Measure the fixture directly
+    // so the boundary tests use an independent pixel count for the installed renderer.
+    const actualPages = await pdfToPng('./test-data/pdf1.pdf', { viewportScale: 2 });
+    const expectedPages = await pdfToPng('./test-data/pdf2.pdf', { viewportScale: 2 });
+    expect(actualPages.map((page) => page.pageNumber)).toEqual(expectedPages.map((page) => page.pageNumber));
+    const counts = actualPages.map((page, index) => {
+        const expected = expectedPages[index];
+        if (!page.content || !expected.content) {
+            throw new Error('Expected rendered PNG content for both threshold fixtures.');
+        }
+        return comparePng(page.content, expected.content);
+    });
+    largestPageMismatch = Math.max(...counts);
+    expect(largestPageMismatch).toBeGreaterThan(0);
+});
 
 test(`should return false for non equal PDF files with threshold less than specified`, async () => {
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
         excludedAreas: [],
-        compareThreshold: actualDiffsAmount - 1,
+        compareThreshold: largestPageMismatch - 1,
         diffsOutputFolder: resolve(`./test-results/compare/5-1`),
     });
 
@@ -16,7 +35,7 @@ test(`should return false for non equal PDF files with threshold less than speci
 
 test(`should return true for non equal PDF files with threshold equals to specified`, async () => {
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
-        compareThreshold: actualDiffsAmount,
+        compareThreshold: largestPageMismatch,
         diffsOutputFolder: resolve(`./test-results/compare/5-2`),
     });
 
@@ -25,7 +44,7 @@ test(`should return true for non equal PDF files with threshold equals to specif
 
 test(`should return true for non equal PDF files with threshold more than specified`, async () => {
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf2.pdf', {
-        compareThreshold: actualDiffsAmount + 1,
+        compareThreshold: largestPageMismatch + 1,
         diffsOutputFolder: resolve(`./test-results/compare/5-3`),
     });
 

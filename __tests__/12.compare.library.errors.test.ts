@@ -1,3 +1,4 @@
+import { mockPdfDocuments } from './helpers/mockPdfDocuments.js';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 const { comparePngMock, pdfToPngMock } = vi.hoisted(() => ({
@@ -38,9 +39,11 @@ test(`should wrap PDF renderer failures with ComparePdfRenderingError and cause`
 
 test(`should wrap PNG comparator failures with ComparePdfComparisonError and cause`, async () => {
     const comparisonCause = new Error('comparator exploded');
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') }])
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') }],
+        [{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') }],
+    );
     comparePngMock.mockImplementationOnce(() => {
         throw comparisonCause;
     });

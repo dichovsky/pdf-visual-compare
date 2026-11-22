@@ -5,9 +5,11 @@
 ```sh
 npm run build          # Compile TypeScript → ./out/ (runs clean first via prebuild)
 npm run clean          # Delete ./out/, ./coverage/, ./test-results/, ./comparePdfOutput/
-npm run test           # Full pipeline: clean → lint → license check → build → vitest --coverage
-npm run lint           # ESLint only (no build)
-npm run lint:fix       # ESLint with auto-fix
+npm run test           # Check formatting, lint, licenses, build, types, package artifacts and test coverage
+npm run lint           # Run Oxlint and fail on warnings
+npm run lint:fix       # Apply Oxlint fixes
+npm run format         # Format files with Oxfmt
+npm run format:check   # Verify formatting
 npm run test:license   # Verify all production dependencies use approved licenses
 npm run test:docker    # Build Docker image and run tests inside it (Linux parity)
 ```
@@ -25,8 +27,7 @@ npm run docker:build   # docker build → image: test-pdf-visual-compare
 npm run docker:run     # docker run (prepares ./test-results, then mounts it into the container)
 ```
 
-> `npm run test` always runs `pretest` first (clean → lint → license → build). If you want to skip
-> that pipeline and run vitest directly, run `npm run build` first, then `npx vitest run`.
+> Run `npm test` for the same checks as CI. Use `npx vitest run` to run the test suite directly.
 
 ---
 
@@ -58,14 +59,14 @@ pdf-visual-compare/
 ├── out/                          # TypeScript build output (gitignored; npm published)
 ├── .github/
 │   ├── workflows/
-│   │   ├── test.yml              # CI: run tests on push (Ubuntu + Windows)
+│   │   ├── test.yml              # CI: validate pushes and pull requests on Ubuntu
 │   │   └── publish.yml           # CD: publish to npm on GitHub release
 │   └── copilot-instructions.md   # This file
 ├── tsconfig.json
-├── eslint.config.mjs
+├── .oxlintrc.json
 ├── vitest.config.mjs
-├── .prettierrc
-├── Dockerfile                    # Node 24 slim, test-only Vitest runner
+├── .oxfmtrc.json
+├── Dockerfile                    # Node 26 slim, test-only Vitest runner
 └── package.json
 ```
 
@@ -238,7 +239,7 @@ All intra-package imports use `.js` extensions despite the source being TypeScri
 import { getDefaultDiffsFolder } from './const.js';
 ```
 
-This is required by `"moduleResolution": "node16"` in `tsconfig.json`. The TypeScript compiler maps `.js` back to `.ts` sources at compile time.
+Use a `.js` extension in relative imports. TypeScript resolves the corresponding `.ts` source during compilation.
 
 ### Page matching by `pageNumber`
 
@@ -279,7 +280,7 @@ from both inputs and compares exactly the planned page pairs.
 
 **Diff outputs** during test runs go to `./test-results/compare/<test-id>/` (e.g., `5-1`, `5-2`). The `./test-results/` directory is gitignored and cleaned before each `npm test`.
 
-**Coverage:** 100% statements, branches, functions, and lines across `comparePdf.ts`, `const.ts`, and both type files.
+**Coverage thresholds:** 100% of statements, functions, and lines, and 90% of branches.
 
 ---
 
@@ -313,43 +314,15 @@ Total published size: ~11 KB. Source files, tests, and config are excluded.
 - `"types": "./out/index.d.ts"` — TypeScript declarations
 - `"exports"."."` — explicit exports map for bundlers and modern Node.js
 
-**Publish workflow** (`.github/workflows/publish.yml`): triggered on GitHub release creation → `npm ci` → `npm test` → `npm publish` with `NODE_AUTH_TOKEN` from repository secrets.
+## CI and release
+
+The `test` job runs on `ubuntu-24.04` with the Node version in `.nvmrc`. It installs the locked dependencies and runs `npm test` on pushes and pull requests. The publish workflow repeats the validation when a stable GitHub release is published, then uses npm trusted publishing with provenance.
 
 ---
 
-## CI / CD
+## Code style
 
-### test.yml — runs on every push (except `release/*` branches)
-
-| Job       | OS             | Node |
-| --------- | -------------- | ---- |
-| `ubuntu`  | ubuntu-latest  | 24.x |
-| `windows` | windows-latest | 22.x |
-
-Both jobs: `npm ci` → `npm test`.
-
-### publish.yml — runs on GitHub release creation
-
-`ubuntu-latest`, Node 22.x: `npm ci` → `npm test` → `npm publish`.
-
----
-
-## Code Style
-
-**Prettier** (`.prettierrc`):
-
-- `tabWidth: 4`, `useTabs: false`
-- `singleQuote: true`, `semi: true`
-- `trailingComma: "all"`, `printWidth: 120`
-- `arrowParens: "always"`
-- JSON files also use `tabWidth: 4`
-
-**ESLint** (`eslint.config.mjs`):
-
-- Extends `typescript-eslint` recommended rules
-- `@typescript-eslint/no-explicit-any`: disabled — used in `validateInputFileType` for runtime duck-typing
-- `@typescript-eslint/no-require-imports`: disabled
-- Ignores: `coverage/`, `out/`, `node_modules/`
+Use `npm run lint` for Oxlint and `npm run format:check` for Oxfmt. Apply fixes with `npm run lint:fix` and `npm run format`.
 
 ---
 
@@ -358,8 +331,7 @@ Both jobs: `npm ci` → `npm test`.
 ```json
 {
     "module": "nodenext",
-    "moduleResolution": "node16",
-    "target": "es2022",
+    "target": "ES2024",
     "lib": ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
     "strict": true,
     "declaration": true,
@@ -369,7 +341,7 @@ Both jobs: `npm ci` → `npm test`.
 }
 ```
 
-- `module: nodenext` + `moduleResolution: node16` enforces explicit `.js` extensions in imports and aligns with Node.js native ESM resolution, even though the package compiles to CommonJS (no `"type": "module"` in `package.json`).
+- `module: nodenext` follows Node.js module resolution. This package builds CommonJS output.
 - `strict: true` enables all strictness flags (noImplicitAny, strictNullChecks, etc.).
 
 ---
