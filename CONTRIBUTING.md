@@ -1,17 +1,19 @@
 # Contributing
 
-Thanks for contributing to `pdf-visual-compare`.
+Thank you for your contribution to `pdf-visual-compare`.
 
-This guide is intentionally tied to the repository's current scripts, CI workflows, and release process so you can set up, validate, and submit changes without needing extra context.
+This guide uses the scripts, CI workflows, and release process that the repository has now. With this guide, you can set up the repository, validate a change, and submit it. You do not need other information.
+
+For the rules about prose in this repository, refer to the [writing guide](docs/WRITING_GUIDE.md).
 
 ## Prerequisites
 
 - Node.js 24 (`.nvmrc`)
 - npm
-- Docker (optional, for Linux-parity test runs)
+- Docker (optional, for test runs in a Linux container that is almost the same as CI)
 - macOS or Linux for local development
 
-The package declares `node >=24`, and this repository's local and CI default is Node 24.
+The package declares `node >=24`. Node.js 24 is the default version for local development and for CI.
 
 ## Clone and install
 
@@ -23,34 +25,35 @@ npm ci
 
 ## TypeScript toolchain
 
-This repository uses two TypeScript packages side by side, installed under npm
-aliases:
+This repository uses two TypeScript packages together. Each package has an npm alias:
 
 - `@typescript/native` is `typescript@7`. It compiles `npm run build` and
-  `npm run test:types`, which invoke it by full path
-  (`node ./node_modules/@typescript/native/bin/tsc`) so the compiler in use
-  never depends on install history.
-- `typescript` is `@typescript/typescript6`, which provides the TypeScript 6
+  `npm run test:types`. These scripts run it by its full path
+  (`node ./node_modules/@typescript/native/bin/tsc`). Thus, the compiler does
+  not change with the install history.
+- `typescript` is `@typescript/typescript6`. This package gives the TypeScript 6
   compiler API. `typescript-eslint` and `scripts/generate-codemap.ts` both need
-  that API, and TypeScript 7 no longer exposes it.
+  that API. TypeScript 7 does not have that API.
 
 After `npm ci`, `node_modules/.bin/tsc` is TypeScript 7 and
-`node_modules/.bin/tsc6` is TypeScript 6. A globally installed `tsc` is neither,
-so prefer the repository scripts. Do not replace either alias with a plain
-`typescript` dependency — that breaks linting and codemap generation. See
+`node_modules/.bin/tsc6` is TypeScript 6. A global installation of `tsc` is not
+one of these two compilers. Thus, we recommend that you use the repository scripts.
+
+Do not replace either alias with a plain `typescript` dependency. That change
+breaks linting and codemap generation. Refer to
 [docs/TYPESCRIPT_7_MIGRATION.md](docs/TYPESCRIPT_7_MIGRATION.md).
 
 ## Project layout
 
 - `src/` — library source
-- `__tests__/` — Vitest coverage for public behavior and regressions
-- `test-data/` — checked-in PDF fixtures
-- `out/` — build output and published package contents
+- `__tests__/` — Vitest tests for public behavior and regressions
+- `test-data/` — PDF fixtures in the repository
+- `out/` — build output and the contents of the published package
 - `.github/workflows/` — CI and release automation
 
 ## Canonical validation commands
 
-Use the repository scripts instead of ad hoc commands.
+Use the repository scripts, not ad hoc commands.
 
 ```sh
 npm run clean          # Remove build and test artifacts
@@ -66,7 +69,7 @@ npm run test:docker    # Build Docker image and run tests in the container
 
 ### What `npm test` covers
 
-`npm test` is the main pre-PR validation command. It runs:
+`npm test` is the main validation command before a pull request. It runs these steps:
 
 1. `npm run clean`
 2. `npm run lint`
@@ -76,11 +79,11 @@ npm run test:docker    # Build Docker image and run tests in the container
 6. `npm run test:artifacts`
 7. `vitest run --coverage`
 
-If you only run one command before opening a PR, run `npm test`.
+If you run only one command before you open a pull request, run `npm test`.
 
 ## Fast local iteration
 
-For faster feedback while developing:
+To get faster results while you develop, run these commands:
 
 ```sh
 npm run build
@@ -88,11 +91,11 @@ npx vitest run
 npx vitest run __tests__/1.compare.equal.pdf.files.test.ts
 ```
 
-Run `npm run build` first when you need `./out/` to be current for type or artifact checks.
+Run `npm run build` first when the type checks or the artifact checks need an up-to-date `./out/`.
 
 ## Docker workflow
 
-Docker is used for local Linux-parity validation.
+The Docker workflow gives local validation in a Linux container that is almost the same as CI.
 
 ```sh
 npm run docker:build
@@ -103,90 +106,97 @@ npm run test:docker
 
 Notes:
 
-- `npm run test:docker` is the single supported local entry point for the Docker test path.
+- `npm run test:docker` is the only supported local entry point for the Docker tests.
 - `docker:run` mounts `./test-results` into the container.
-- `predocker:run` prepares that directory automatically.
-- `docker:run` relies on the POSIX shell `$PWD` environment variable and is supported on macOS/Linux shells only.
-- Use Docker when you want a clean containerized test run close to the Ubuntu CI environment.
+- `predocker:run` prepares that folder automatically.
+- `docker:run` uses the POSIX shell `$PWD` environment variable. Thus, it is supported only in macOS and Linux shells.
+- Use Docker when you want a clean test run in a container. The container is almost the same as the Ubuntu CI environment.
 
 ## Contributor expectations
 
 ### Before you open a pull request
 
-- Keep changes scoped to the task.
-- Update docs when public API, validation behavior, or workflows change.
-- Add or update tests for behavior changes.
-- Run `npm test` locally for code changes.
-- Run `npm run test:docker` when a change could behave differently on Linux or depends on filesystem/process behavior.
+- Keep the changes in the scope of the task.
+- Update the documentation when the public API, the validation behavior, or the workflows change.
+- Add or update tests for changes to behavior.
+- Run `npm test` locally for changes to code.
+- Run `npm run test:docker` when a change can operate differently on Linux. Also run it when the behavior of a change depends on the file system or on processes.
 
 ### When touching public API or validation behavior
 
-Please keep these surfaces aligned:
+Keep these surfaces aligned:
 
-- runtime behavior in `src/`
-- README examples and option descriptions
-- emitted package surface from `./out/`
-- type-level validation checked by `npm run test:types`
-- artifact/export verification checked by `npm run test:artifacts`
+- The runtime behavior in `src/`
+- The README examples and option descriptions
+- The package surface in `./out/`
+- The type-level validation that `npm run test:types` does
+- The artifact and export verification that `npm run test:artifacts` does
 
-This is especially important for typed errors, input/path-boundary rules, and exported types.
+This alignment is most important for typed errors, rules for input paths and folder boundaries, and exported types.
 
 ### Tests and fixtures
 
 - Put automated tests in `__tests__/`.
-- Reuse fixtures from `test-data/` when possible.
-- Keep generated artifacts under `test-results/` or `comparePdfOutput/`; both are disposable.
+- When possible, use the fixtures that are in `test-data/`.
+- Keep generated artifacts in `test-results/` or `comparePdfOutput/`. You can delete both folders at any time.
 
 ## CI expectations
 
 GitHub Actions runs on pushes and pull requests.
 
-Current CI behavior:
+CI behavior:
 
-- `test.yml` runs a single job on `ubuntu-24.04`
-- CI upgrades to `npm@latest` before installing, matching what `publish.yml` does before `prepublishOnly`, so npm-version regressions in the release tooling fail in CI rather than only during a publish
-- CI installs dependencies with `npm ci`
-- CI runs `npm run lint`
-- CI runs `npm run test:license`
-- CI runs `npm test`
+- `test.yml` runs one job on `ubuntu-24.04`.
+- CI upgrades to `npm@latest` before it installs dependencies. `publish.yml` does the same upgrade before `prepublishOnly`. Thus, an npm version that breaks the release tooling causes a failure in CI, not only during a publish.
+- CI installs dependencies with `npm ci`.
+- CI runs `npm run lint`.
+- CI runs `npm run test:license`.
+- CI runs `npm test`.
 
-Because `npm test` already includes build, consumer type verification, artifact verification, and coverage, contributors should treat it as the canonical local check before asking for review.
+`npm test` includes the build, the consumer type verification, the artifact verification, and the coverage. Thus, we recommend that you use it as the canonical local check before you ask for a review.
 
 ### Required status checks for merges to `main`
 
-Pull requests targeting `main` must pass these required GitHub status checks before merge:
+Pull requests to `main` must pass these required GitHub status checks before a merge:
 
 - `test`
 
-This is the exact job check name produced by the `CI` workflow in `.github/workflows/test.yml`.
-The release-only `Publish Package` workflow is not part of the merge gate for `main`.
+This name is the exact check name of the job in the `CI` workflow in `.github/workflows/test.yml`.
+The `Publish Package` workflow is only for releases. It is not part of the merge gate for `main`.
 
-If the CI workflow job names change, update this document and the `main` branch protection
-required-check list together so the documented policy matches repository settings. Note that adding a
-matrix to the job renames its check (a matrix job reports as `test (<values>)`, not `test`), which
-silently blocks every pull request until the required-check list is updated to match.
+If the job names of the CI workflow change, update this document and the `main` required checks together.
+Then the documented policy agrees with the repository settings.
+
+A matrix in the job changes the check name. A matrix job reports as `test (<values>)`, not `test`.
+Every pull request is then blocked without a message until you update the list of required checks.
 
 ## Release expectations
 
-Publishing is automated from `.github/workflows/publish.yml`.
+The `.github/workflows/publish.yml` workflow publishes the package automatically.
 
-Current release flow:
+Release flow:
 
-1. GitHub Release is published
-2. workflow runs `npm ci`
-3. workflow runs `npm run prepublishOnly` (which maps to `npm test`)
-4. workflow runs `npm publish --ignore-scripts --provenance`
+1. A GitHub Release is published.
+2. The workflow runs `npm ci`.
+3. The workflow runs `npm run prepublishOnly`, which runs `npm test`.
+4. The workflow runs `npm publish --ignore-scripts --provenance`.
 
-That means a release must pass the same validation pipeline used for normal development before it is published.
+Thus, a release must pass the same validation pipeline as normal development before the workflow publishes it.
 
 ## Pull request guidance
 
-A good PR description should include:
+We recommend that your pull request description include these items:
 
-- what changed
-- why it changed
-- any API or behavior impact
-- how you validated it locally
-- whether docs/tests were updated
+- What changed
+- Why it changed
+- Any effect on the API or the behavior
+- How you validated it locally
+- Whether you updated the documentation or the tests
 
-If your change affects comparison semantics, rendering constraints, path validation, exported types, or error classes, call that out explicitly in the PR.
+If your change has an effect on one of these items, write that clearly in the pull request:
+
+- Comparison semantics
+- Rendering constraints
+- Path validation
+- Exported types
+- Error classes
