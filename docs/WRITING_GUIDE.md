@@ -18,21 +18,22 @@ These files follow this guide:
 
 - `README.md`
 - `CONTRIBUTING.md`
-- `BACKLOG.md`
 - `docs/TYPESCRIPT_7_MIGRATION.md` and this guide
-- Public API doc comments in `src/comparePdf.ts`, `src/types/`, `src/errors/`, and `src/serialize/`
+- Public API doc comments in `src/comparePdf.ts`, `src/index.ts`, `src/types/`, `src/errors/`, and
+  `src/serialize/`
 
 These files do not follow this guide:
 
-| File or text                                                           | Reason                                                           |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `CHANGELOG.md`, `BACKLOG-ARCHIVE.md`, `docs/pdf-diff-feature-audit.md` | Historical records. Do not change past entries.                  |
-| `CODEMAP.md`                                                           | Generated file. Run `npm run codemap` to update it.              |
-| `LICENSE`                                                              | Legal text.                                                      |
-| `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`            | Agent instruction files. A separate change can migrate them.     |
-| Error messages, CLI help text, and report text                         | Runtime strings. Tests and callers can depend on the wording.    |
-| Quoted runtime strings in the documentation                            | Each quote must stay identical to the runtime string.            |
-| Dated records in `docs/TYPESCRIPT_7_MIGRATION.md`                      | The "Verification" and "Installation note" sections are history. |
+| File or text                                                           | Reason                                                                                  |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `CHANGELOG.md`, `BACKLOG-ARCHIVE.md`, `docs/pdf-diff-feature-audit.md` | Historical records. Do not change past entries.                                         |
+| `CODEMAP.md`                                                           | Generated file. Run `npm run codemap` to update it.                                     |
+| `LICENSE`                                                              | Legal text.                                                                             |
+| `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`            | Agent instruction files. A separate change can migrate them.                            |
+| Error messages, CLI help text, and report text                         | Runtime strings. Tests and callers can depend on the wording.                           |
+| Quoted runtime strings in the documentation                            | Each quote must stay the same as the runtime string.                                    |
+| `BACKLOG.md`                                                           | Its agent rule asks for brief descriptions. That repository rule has priority over STE. |
+| Dated records in `docs/TYPESCRIPT_7_MIGRATION.md`                      | The "Verification" and "Installation note" sections are history.                        |
 
 ## Writing rules
 
@@ -108,53 +109,60 @@ Categories:
 
 ### Comparison concepts
 
-| Term                 | Category       | Meaning                                                                                                           | Do not use                                         |
-| -------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| actual PDF           | Technical name | The PDF that the test makes. The first argument.                                                                  | "new PDF", "candidate", "test PDF"                 |
-| expected PDF         | Technical name | The PDF that the actual PDF must look like. The second argument.                                                  | "baseline", "reference PDF", "golden file"         |
-| rendered page        | Technical name | A PNG image of one PDF page.                                                                                      | "page image", "page PNG", "screenshot"             |
-| page number          | Technical name | The 1-based number of a rendered page. The renderer gives this number.                                            | "page index", "page position"                      |
-| comparison plan      | Technical name | The list of page numbers that a comparison examines.                                                              | "page plan"                                        |
-| counterpart          | Technical name | The rendered page with the same page number in the other PDF.                                                     | "matching page", "pair"                            |
-| mismatch count       | Technical name | The number of different pixels on one page, from `png-visual-compare`. Field `mismatchCount`.                     | "difference count", "diff count", "changed pixels" |
-| comparison canvas    | Technical name | The larger width multiplied by the larger height of the two rendered pages.                                       | "page area" (for this calculation)                 |
-| mismatch percentage  | Technical name | The mismatch count as a percentage of the comparison canvas. Field `mismatchPercent`.                             | "change percentage", "difference ratio"            |
-| pixel threshold      | Technical name | The maximum mismatch count for an equal page. Options `compareThreshold`, `matchingThreshold`.                    | "tolerance", "limit", "allowance"                  |
-| percentage threshold | Technical name | The maximum mismatch percentage for an equal page. Options `compareThresholdPercent`, `matchingThresholdPercent`. | "tolerance", "percent limit"                       |
-| equal                | Approved word  | A page or a document that is in its threshold. Field `isEqual`.                                                   | "identical", "passes", "equivalent", "matches"     |
-| page exclusion       | Technical name | One entry in the `excludedAreas` option. The entry applies to one page number.                                    | "exclusion zone", "exclusion rule"                 |
-| excluded area        | Technical name | A rectangle (`PageArea`) on a rendered page that the comparison does not examine.                                 | "mask", "ignore region", "exclusion zone"          |
-| diff image           | Technical name | A PNG image that shows the different pixels of one page.                                                          | "diff file", "diff PNG", "difference image"        |
-| diff output folder   | Technical name | The folder for diff images. Option `diffsOutputFolder`.                                                           | "diff root", "write root"                          |
-| render output folder | Technical name | The folder for rendered pages. Option `pdfToPngConvertOptions.outputFolder`.                                      | "intermediate folder"                              |
-| input root           | Technical name | The folder that must contain the string PDF inputs. Option `allowedInputRoot`.                                    | "workspace root", "path boundary"                  |
-| folder               | Technical name | A file system directory.                                                                                          | "directory" (except in quoted runtime strings)     |
-| symbolic link        | Technical name | A file system entry that points to a different path.                                                              | "symlink" (except in identifiers)                  |
-| string input         | Technical name | A PDF input that is a file path.                                                                                  | "path argument"                                    |
-| binary input         | Technical name | A PDF input that is a `Buffer`, an `ArrayBuffer`, or a `SharedArrayBuffer`.                                       | "buffer input" (for all three types)               |
-| caller               | Technical name | The code that calls a function of this library.                                                                   | "consumer" (for code), "client"                    |
-| report               | Technical name | The JSON or JUnit XML text that `toJsonReport` or `toJUnitReport` makes.                                          | "output file"                                      |
-| exit code            | Technical name | The number that the CLI process gives to the shell when it stops.                                                 | "return code", "status code"                       |
-| trusted              | Exception      | A security term: the caller is responsible for the safety of the path. No STE word has this meaning.              | "safe" (for this meaning)                          |
-| supported            | Exception      | A compatibility term: the maintainers keep the platform or the runtime operational. No STE word has this meaning. | "works on"                                         |
+| Term                 | Category       | Meaning                                                                                                                                         | Do not use                                         |
+| -------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| actual PDF           | Technical name | The PDF that the test makes. The first argument.                                                                                                | "new PDF", "candidate", "test PDF"                 |
+| expected PDF         | Technical name | The PDF that the actual PDF must look like. The second argument.                                                                                | "baseline", "reference PDF", "golden file"         |
+| rendered page        | Technical name | A PNG image of one PDF page.                                                                                                                    | "page image", "page PNG", "screenshot"             |
+| page number          | Technical name | The 1-based number of a rendered page. The renderer gives this number.                                                                          | "page index", "page position"                      |
+| comparison plan      | Technical name | The list of page numbers that a comparison examines.                                                                                            | "page plan"                                        |
+| counterpart          | Technical name | The rendered page with the same page number in the other PDF.                                                                                   | "matching page", "pair"                            |
+| mismatch count       | Technical name | The number of different pixels on one page, from `png-visual-compare`. Field `mismatchCount`.                                                   | "difference count", "diff count", "changed pixels" |
+| comparison canvas    | Technical name | The larger width multiplied by the larger height of the two rendered pages.                                                                     | "page area" (for this calculation)                 |
+| mismatch percentage  | Technical name | The mismatch count as a percentage of the comparison canvas. Field `mismatchPercent`.                                                           | "change percentage", "difference ratio"            |
+| pixel threshold      | Technical name | The maximum mismatch count for an equal page. Options `compareThreshold`, `matchingThreshold`.                                                  | "tolerance", "limit", "allowance"                  |
+| percentage threshold | Technical name | The maximum mismatch percentage for an equal page. Options `compareThresholdPercent`, `matchingThresholdPercent`.                               | "tolerance", "percent limit"                       |
+| equal                | Approved word  | A page or a document that is in its threshold. Field `isEqual`.                                                                                 | "identical", "passes", "equivalent", "matches"     |
+| page exclusion       | Technical name | One entry in the `excludedAreas` option. The entry applies to one page number.                                                                  | "exclusion zone", "exclusion rule"                 |
+| excluded area        | Technical name | A rectangle (`PageArea`) on a rendered page that the comparison does not examine.                                                               | "mask", "ignore region", "exclusion zone"          |
+| diff image           | Technical name | A PNG image that shows the different pixels of one page.                                                                                        | "diff file", "diff PNG", "difference image"        |
+| diff output folder   | Technical name | The folder for diff images. Option `diffsOutputFolder`.                                                                                         | "diff root", "write root"                          |
+| render output folder | Technical name | The folder for rendered pages. Option `pdfToPngConvertOptions.outputFolder`.                                                                    | "intermediate folder"                              |
+| input root           | Technical name | The folder that must contain the string PDF inputs. Option `allowedInputRoot`.                                                                  | "workspace root", "path boundary"                  |
+| folder               | Technical name | A file system directory.                                                                                                                        | "directory" (except in quoted runtime strings)     |
+| symbolic link        | Technical name | A file system entry that points to a different path.                                                                                            | "symlink" (except in identifiers)                  |
+| string input         | Technical name | A PDF input that is a file path.                                                                                                                | "path argument"                                    |
+| binary input         | Technical name | A PDF input that is a `Buffer`, an `ArrayBuffer`, or a `SharedArrayBuffer`.                                                                     | "buffer input" (for all three types)               |
+| caller               | Technical name | The code that calls a function of this library.                                                                                                 | "consumer" (for code), "client"                    |
+| report               | Technical name | The JSON or JUnit XML text that `toJsonReport` or `toJUnitReport` makes.                                                                        | "output file"                                      |
+| exit code            | Technical name | The number that the CLI process gives to the shell when it stops.                                                                               | "return code", "status code"                       |
+| comparison           | Technical name | The operation that `comparePdf()` or `comparePdfDetailed()` does. The dictionary does not approve this noun, but the project uses it as a term. | "diff" (as a noun for the operation)               |
+| file                 | Technical name | A file in a file system.                                                                                                                        | "document" (for a file on disk)                    |
+| option               | Technical name | A property of `ComparePdfOptions` or `PdfRenderOptions`, or a CLI flag.                                                                         | "setting" (for an option property)                 |
+| job, check           | Technical name | A GitHub Actions job, and the status check that the job reports.                                                                                | "build" (for a CI job)                             |
+| pull request         | Technical name | A GitHub pull request.                                                                                                                          | "PR" in prose, "merge request"                     |
+| exact                | Exception      | Used only for check names, which must agree character by character. No approved word has this meaning.                                          | "same" (for this meaning)                          |
+| trusted              | Exception      | A security term: the caller is responsible for the safety of the path. No STE word has this meaning.                                            | "safe" (for this meaning)                          |
+| supported            | Exception      | A compatibility term: the maintainers keep the platform or the runtime operational. No STE word has this meaning.                               | "works on"                                         |
 
 ### Verbs
 
-| Term                                   | Category       | Meaning                                                                      | Do not use                         |
-| -------------------------------------- | -------------- | ---------------------------------------------------------------------------- | ---------------------------------- |
-| compare                                | Approved word  | Examine two items for differences.                                           | "diff" (as a verb), "check"        |
-| render                                 | Technical verb | Make a PNG image from a PDF page.                                            | "convert", "rasterize", "draw"     |
-| throw                                  | Technical verb | Stop a function with an error.                                               | "raise"                            |
-| return                                 | Technical verb | Give a value back to the caller of a function.                               | "yield" (for this meaning)         |
-| resolve                                | Technical verb | Change a relative path to an absolute path. Also: a promise gives its value. | -                                  |
-| run                                    | Technical verb | Start a command, a script, or a test.                                        | "execute", "invoke" (in prose)     |
-| install, build, compile, lint, publish | Technical verb | Software operations with their usual meaning.                                | -                                  |
-| validate                               | Technical verb | Examine a value and throw an error when the value is not correct.            | "verify" (for input values)        |
-| enable, disable                        | Technical verb | Set an option so that a function operates or does not operate.               | "turn on", "turn off"              |
-| serialize, parse, normalize            | Technical verb | Data operations with their usual meaning.                                    | -                                  |
-| write, read                            | Approved word  | Put data in a file, or get data from a file.                                 | "emit", "dump", "load" (for files) |
-| set                                    | Approved word  | Give an option a value.                                                      | "configure" (for one option)       |
-| let                                    | Approved word  | Use instead of "allow" and "enable" when the meaning is "permit".            | "allow"                            |
+| Term                                   | Category       | Meaning                                                                                     | Do not use                                     |
+| -------------------------------------- | -------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| compare                                | Approved word  | Examine two items for differences.                                                          | "diff" (as a verb), "check"                    |
+| pass, fail                             | Technical verb | A check, a test, or a job gives a good result or a bad result. Do not use for page results. | "succeed" for checks, "pass" for an equal page |
+| render                                 | Technical verb | Make a PNG image from a PDF page.                                                           | "convert", "rasterize", "draw"                 |
+| throw                                  | Technical verb | Stop a function with an error.                                                              | "raise"                                        |
+| return                                 | Technical verb | Give a value back to the caller of a function.                                              | "yield" (for this meaning)                     |
+| resolve                                | Technical verb | Change a relative path to an absolute path. Also: a promise gives its value.                | -                                              |
+| run                                    | Technical verb | Start a command, a script, or a test.                                                       | "execute", "invoke" (in prose)                 |
+| install, build, compile, lint, publish | Technical verb | Software operations with their usual meaning.                                               | -                                              |
+| validate                               | Technical verb | Examine a value and throw an error when the value is not correct.                           | "verify" (for input values)                    |
+| enable, disable                        | Technical verb | Set an option so that a function operates or does not operate.                              | "turn on", "turn off"                          |
+| serialize, parse, normalize            | Technical verb | Data operations with their usual meaning.                                                   | -                                              |
+| write, read                            | Approved word  | Put data in a file, or get data from a file.                                                | "emit", "dump", "load" (for files)             |
+| set                                    | Approved word  | Give an option a value.                                                                     | "configure" (for one option)                   |
+| let                                    | Approved word  | Use instead of "allow" and "enable" when the meaning is "permit".                           | "allow"                                        |
 
 ## Validation
 
