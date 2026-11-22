@@ -1,5 +1,5 @@
 /**
- * An RGB colour used in diff output images.
+ * An RGB color for diff images.
  */
 export type RgbColor = {
     /** Red channel (0–255). */

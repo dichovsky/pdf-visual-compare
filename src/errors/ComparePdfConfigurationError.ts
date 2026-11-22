@@ -1,6 +1,6 @@
 import { ComparePdfError } from './ComparePdfError.js';
 
 /**
- * Thrown when comparePdf receives invalid runtime configuration values.
+ * The library throws this error when comparePdf receives configuration values that are not valid at runtime.
  */
 export class ComparePdfConfigurationError extends ComparePdfError {}

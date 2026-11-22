@@ -1,11 +1,13 @@
 /**
- * Supported PDF input sources for `comparePdf()` and `comparePdfDetailed()`.
+ * The PDF inputs that `comparePdf()` and `comparePdfDetailed()` accept.
  *
- * - `string`: trusted path to a PDF file on disk, opened and read before rendering
- * - `Buffer`: Node.js binary PDF content
- * - `ArrayBufferLike`: binary PDF content, including `ArrayBuffer` and `SharedArrayBuffer`
+ * - `string`: trusted path to a PDF file on disk. The library opens and reads the file before
+ *   the renderer starts.
+ * - `Buffer`: binary PDF content from Node.js
+ * - `ArrayBufferLike`: binary PDF content, which includes `ArrayBuffer` and `SharedArrayBuffer`
  *
- * `SharedArrayBuffer` inputs are normalized to `ArrayBuffer` before being passed to the PDF renderer.
- * For untrusted environments, prefer binary inputs or configure `allowedInputRoot`.
+ * The library normalizes `SharedArrayBuffer` inputs to `ArrayBuffer` before it gives them to the
+ * PDF renderer. In environments that are not trusted, we recommend that you use binary inputs or
+ * set `allowedInputRoot`.
  */
 export type PdfInput = string | Buffer | ArrayBufferLike;

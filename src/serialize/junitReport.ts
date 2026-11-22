@@ -5,10 +5,12 @@ import { escapeXmlAttribute, escapeXmlText } from './xml.js';
 const SUITE_NAME = 'pdf-visual-compare';
 
 /**
- * Serializes a {@link ComparePdfDetailedResult} as a JUnit XML test report: one `<testcase>`
- * per compared page, with a `<failure>` for every page that is not equal (mismatched or
- * missing a counterpart). Output is deterministic (no timestamps) so it is stable in snapshots
- * and CI diffs. Caller-controlled page names are XML-escaped.
+ * Serializes a {@link ComparePdfDetailedResult} as a JUnit XML test report.
+ *
+ * The report has one `<testcase>` for each compared page. It has a `<failure>` for each page
+ * that is not equal: a mismatched page or a page without a counterpart. The output has no
+ * timestamps. Thus, the output is the same for the same result, in snapshots and in CI diffs.
+ * The function escapes the XML in the page names that callers control.
  */
 export function toJUnitReport(result: ComparePdfDetailedResult): string {
     const tests = result.pages.length;
