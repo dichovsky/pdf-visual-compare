@@ -3,8 +3,7 @@ FROM node:24-slim AS deps
 WORKDIR /usr/pkg
 
 COPY package*.json ./
-RUN npm ci --omit=dev \
-    && npm install --no-save vitest@^4.1.5
+RUN npm ci
 
 FROM node:24-slim
 
@@ -17,7 +16,7 @@ COPY --chown=app:app src ./src
 COPY --chown=app:app __tests__ ./__tests__
 COPY --chown=app:app test-data ./test-data
 COPY --chown=app:app vitest.config.mjs ./
-COPY --chown=app:app tsconfig.json ./
+COPY --chown=app:app tsconfig.json package.json README.md ./
 
 RUN chown -R app:app /usr/pkg
 
