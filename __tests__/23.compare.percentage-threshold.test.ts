@@ -1,3 +1,4 @@
+import { mockPdfDocuments } from './helpers/mockPdfDocuments.js';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 const { comparePngMock, pdfToPngMock } = vi.hoisted(() => ({
@@ -21,7 +22,7 @@ beforeEach(() => {
 });
 
 test(`a page over the pixel threshold passes when within the percentage threshold`, async () => {
-    pdfToPngMock.mockResolvedValueOnce([renderedPage('a1', 1)]).mockResolvedValueOnce([renderedPage('e1', 1)]);
+    mockPdfDocuments(pdfToPngMock, [renderedPage('a1', 1)], [renderedPage('e1', 1)]);
     comparePngMock.mockReturnValueOnce(50); // 0.5%
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), {
@@ -42,7 +43,7 @@ test(`a page over the pixel threshold passes when within the percentage threshol
 });
 
 test(`a page over both the pixel and percentage thresholds is reported as mismatched`, async () => {
-    pdfToPngMock.mockResolvedValueOnce([renderedPage('a1', 1)]).mockResolvedValueOnce([renderedPage('e1', 1)]);
+    mockPdfDocuments(pdfToPngMock, [renderedPage('a1', 1)], [renderedPage('e1', 1)]);
     comparePngMock.mockReturnValueOnce(200); // 2%
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), {
@@ -55,9 +56,11 @@ test(`a page over both the pixel and percentage thresholds is reported as mismat
 });
 
 test(`per-page matchingThresholdPercent overrides the document percentage threshold`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([renderedPage('a1', 1), renderedPage('a2', 2)])
-        .mockResolvedValueOnce([renderedPage('e1', 1), renderedPage('e2', 2)]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [renderedPage('a1', 1), renderedPage('a2', 2)],
+        [renderedPage('e1', 1), renderedPage('e2', 2)],
+    );
     comparePngMock.mockReturnValueOnce(50).mockReturnValueOnce(50); // both 0.5%
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), {
@@ -72,7 +75,7 @@ test(`per-page matchingThresholdPercent overrides the document percentage thresh
 });
 
 test(`compareThresholdPercent: 0 cannot tighten a permissive pixel threshold (OR semantics)`, async () => {
-    pdfToPngMock.mockResolvedValueOnce([renderedPage('a1', 1)]).mockResolvedValueOnce([renderedPage('e1', 1)]);
+    mockPdfDocuments(pdfToPngMock, [renderedPage('a1', 1)], [renderedPage('e1', 1)]);
     comparePngMock.mockReturnValueOnce(50); // 0.5%
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), {
@@ -86,9 +89,11 @@ test(`compareThresholdPercent: 0 cannot tighten a permissive pixel threshold (OR
 });
 
 test(`a tiny nonzero mismatch that rounds to 0% still fails a strict compareThresholdPercent: 0 (regression: decision must use the unrounded ratio, not the rounded mismatchPercent)`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'a1', pageNumber: 1, width: 5000, height: 5000, content: Buffer.from('a1') }])
-        .mockResolvedValueOnce([{ name: 'e1', pageNumber: 1, width: 5000, height: 5000, content: Buffer.from('e1') }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'a1', pageNumber: 1, width: 5000, height: 5000, content: Buffer.from('a1') }],
+        [{ name: 'e1', pageNumber: 1, width: 5000, height: 5000, content: Buffer.from('e1') }],
+    );
     // 1 mismatched pixel out of a 5000x5000 = 25,000,000-pixel canvas is 0.000004%, which rounds
     // to a reported mismatchPercent of 0. It must still fail a compareThreshold: 0 /
     // compareThresholdPercent: 0 config instead of passing via the rounded-to-zero percent.
@@ -105,7 +110,7 @@ test(`a tiny nonzero mismatch that rounds to 0% still fails a strict compareThre
 });
 
 test(`the comparePdf boolean reflects percentage-threshold passing`, async () => {
-    pdfToPngMock.mockResolvedValueOnce([renderedPage('a1', 1)]).mockResolvedValueOnce([renderedPage('e1', 1)]);
+    mockPdfDocuments(pdfToPngMock, [renderedPage('a1', 1)], [renderedPage('e1', 1)]);
     comparePngMock.mockReturnValueOnce(50);
 
     await expect(

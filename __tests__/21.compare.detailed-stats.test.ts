@@ -47,8 +47,6 @@ test(`derives mismatch percentage from real rendered dimensions for differing PD
     expect(result.summary.totalMismatchCount).toBe(
         result.pages.reduce((sum, page) => sum + (page.mismatchCount ?? 0), 0),
     );
-    expect(result.summary.maxMismatchPercent).toBe(
-        Math.max(...result.pages.map((page) => page.mismatchPercent ?? 0)),
-    );
+    expect(result.summary.maxMismatchPercent).toBe(Math.max(...result.pages.map((page) => page.mismatchPercent ?? 0)));
     expect(result.summary.maxMismatchPercent).toBeGreaterThan(0);
 });

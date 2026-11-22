@@ -8,16 +8,11 @@ import type { PdfInput } from '../types/PdfInput.js';
 import type { RenderedPngPageOutput } from './types.js';
 import type { PdfToPngOptions, PngPageOutput } from 'pdf-to-png-converter';
 
-export type PlannedPdfPages = {
-    pageNumbers: number[];
-    prefetchedPages: Map<number, PngPageOutput>;
-};
-
 export async function listRenderedPageNumbers(
     pdfFile: PdfInput,
     pdfToPngConvertOpts: PdfToPngOptions,
     sourceLabel: 'actual' | 'expected',
-): Promise<PlannedPdfPages> {
+): Promise<number[]> {
     const metadataPages = await runPdfToPng(
         pdfFile,
         {
@@ -28,10 +23,7 @@ export async function listRenderedPageNumbers(
         sourceLabel,
     );
 
-    return {
-        pageNumbers: metadataPages.map((page) => page.pageNumber),
-        prefetchedPages: new Map(metadataPages.map((page) => [page.pageNumber, page])),
-    };
+    return metadataPages.map((page) => page.pageNumber);
 }
 
 export async function renderPdfPages(
@@ -122,21 +114,13 @@ function clearStaleRenderTarget(
     }
 }
 
-function toRenderablePdfInput(pdfFile: PdfInput): string | Buffer | ArrayBuffer {
-    if (typeof pdfFile === 'string' || Buffer.isBuffer(pdfFile)) {
-        return pdfFile;
-    }
-
-    return Uint8Array.from(new Uint8Array(pdfFile)).buffer;
-}
-
 async function runPdfToPng(
     pdfFile: PdfInput,
     pdfToPngConvertOpts: PdfToPngOptions,
     sourceLabel: 'actual' | 'expected',
 ): Promise<PngPageOutput[]> {
     try {
-        const renderedPages = await pdfToPng(toRenderablePdfInput(pdfFile), {
+        const renderedPages = await pdfToPng(pdfFile, {
             ...pdfToPngConvertOpts,
             outputFolder: pdfToPngConvertOpts.outputFolder
                 ? join(pdfToPngConvertOpts.outputFolder, sourceLabel)

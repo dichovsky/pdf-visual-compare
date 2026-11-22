@@ -1,3 +1,4 @@
+import { mockPdfDocuments } from './helpers/mockPdfDocuments.js';
 import { readFileSync } from 'node:fs';
 import { cp, mkdir, rm, symlink } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -24,9 +25,11 @@ beforeEach(() => {
 });
 
 test('should allow in-root string PDF paths when allowedInputRoot is configured', async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') }])
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') }],
+        [{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') }],
+    );
     comparePngMock.mockReturnValueOnce(0);
 
     await expect(
@@ -115,9 +118,11 @@ test('should reject symlinked string PDF paths that escape allowedInputRoot', as
 });
 
 test('should reject blank per-page diffFilePath values before PNG comparison', async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') }])
-        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') }]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('actual-page-1') }],
+        [{ name: 'page-1.png', pageNumber: 1, content: Buffer.from('expected-page-1') }],
+    );
 
     const comparePromise = comparePdf(Buffer.from('actual-pdf'), Buffer.from('expected-pdf'), {
         excludedAreas: [{ pageNumber: 1, diffFilePath: '   ' }],

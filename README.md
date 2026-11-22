@@ -50,15 +50,14 @@
 
 ## Requirements
 
-- Node.js >= 24
+- Node.js 26 or later
 - Supported runtimes: Linux and macOS. The CI job runs only on Linux. macOS is supported, but no CI job runs on macOS.
 - Windows is not supported.
 
 ## Docker
 
 Use the Docker image only to run tests locally or in a container. The image is a small test runner.
-It installs only the dependencies that are necessary to run Vitest on the source and fixtures in the
-repository.
+It installs the locked dependencies and runs Vitest on the source and fixtures in the repository.
 
 ---
 
@@ -69,15 +68,14 @@ npm install -D pdf-visual-compare
 ```
 
 `pdf-visual-compare` uses `pdf-to-png-converter` 4.x. This dependency includes prebuilt native canvas
-bindings from `@napi-rs/canvas`. Thus, external system packages are not necessary. Callers must use
-Node.js 24 or later.
+bindings from `@napi-rs/canvas`. Thus, external system packages are not necessary.
 
 ## Validation
 
 ```sh
 npm run test:types      # Type-check all repository TypeScript, including the published-surface fixture
 npm run test:artifacts  # Verify the built package entry points and npm pack contents
-npm test                # Full pipeline: clean → lint → codemap check → license check → build → type/artifact checks → vitest --coverage
+npm test                # Check formatting, lint, licenses, build, types, package artifacts and test coverage
 ```
 
 `npm run test:types` includes the published-surface fixture in `__tests__/published-artifacts/`.
@@ -186,7 +184,7 @@ const isEqual = await comparePdf('./actual.pdf', './expected.pdf', options);
 ### Comparing PDF binary inputs
 
 `comparePdf` accepts file paths and these binary inputs: `Buffer`, `ArrayBuffer`, and
-`SharedArrayBuffer`. Before the renderer starts, the library normalizes `SharedArrayBuffer` inputs.
+`SharedArrayBuffer`. The renderer copies binary input data before it opens each PDF.
 
 By default, string paths are only for trusted local files. If you must accept path strings from callers,
 we recommend that you use one of these methods:
@@ -288,9 +286,7 @@ use the generated PNG file names or the position of the entries in `excludedArea
 in the comparison plan has no rendered counterpart in one PDF, the comparison returns `false`.
 
 The library makes the comparison plan first. Then it renders and compares one page at a time, to
-limit the memory usage for PDFs with many pages. `png-visual-compare` 6.x has more asynchronous
-comparison entry points. This library calls `comparePng()` sequentially. The library will not compare pages in parallel until a
-benchmark and a safety review of the dependency support the change.
+limit the memory usage for PDFs with many pages.
 
 String inputs are trusted file paths that the caller controls, unless you set
 `options.allowedInputRoot`. When you set `allowedInputRoot`, the two string inputs must resolve to

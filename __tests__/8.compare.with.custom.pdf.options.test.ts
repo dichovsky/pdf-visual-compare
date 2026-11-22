@@ -20,7 +20,7 @@ test(`should accept comparison-safe render options`, async () => {
 
     const compareResult: boolean = await comparePdf('./test-data/pdf1.pdf', './test-data/pdf11.pdf', {
         pdfToPngConvertOptions: {
-            disableFontFace: false,
+            disableFontFace: true,
             useSystemFonts: true,
             enableXfa: true,
             outputFolder,

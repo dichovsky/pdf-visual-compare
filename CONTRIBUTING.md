@@ -8,12 +8,10 @@ For the rules about prose in this repository, refer to the [writing guide](docs/
 
 ## Prerequisites
 
-- Node.js 24 (`.nvmrc`)
+- Node.js 26 (`.nvmrc`)
 - npm
 - Docker (optional, for test runs in a Linux container that is almost the same as CI)
 - macOS or Linux for local development
-
-The package declares `node >=24`. Node.js 24 is the default version for local development and for CI.
 
 ## Clone and install
 
@@ -23,25 +21,9 @@ cd pdf-visual-compare
 npm ci
 ```
 
-## TypeScript toolchain
+## Development tools
 
-This repository uses two TypeScript packages together. Each package has an npm alias:
-
-- `@typescript/native` is `typescript@7`. It compiles `npm run build` and
-  `npm run test:types`. These scripts run it by its full path
-  (`node ./node_modules/@typescript/native/bin/tsc`). Thus, the compiler does
-  not change with the install history.
-- `typescript` is `@typescript/typescript6`. This package gives the TypeScript 6
-  compiler API. `typescript-eslint` and `scripts/generate-codemap.ts` both need
-  that API. TypeScript 7 does not have that API.
-
-After `npm ci`, `node_modules/.bin/tsc` is TypeScript 7 and
-`node_modules/.bin/tsc6` is TypeScript 6. A global installation of `tsc` is not
-one of these two compilers. Thus, we recommend that you use the repository scripts.
-
-Do not replace either alias with a plain `typescript` dependency. That change
-breaks linting and codemap generation. Refer to
-[docs/TYPESCRIPT_7_MIGRATION.md](docs/TYPESCRIPT_7_MIGRATION.md).
+The build and type checks use the TypeScript 7 compiler that `npm ci` installs. Use the npm scripts to run the same tools as CI.
 
 ## Project layout
 
@@ -58,8 +40,10 @@ Use the repository scripts, not ad hoc commands.
 ```sh
 npm run clean          # Remove build and test artifacts
 npm run build          # Clean + compile TypeScript to ./out
-npm run lint           # ESLint
-npm run lint:fix       # ESLint with auto-fix
+npm run lint           # Run Oxlint and fail on warnings
+npm run lint:fix       # Apply Oxlint fixes
+npm run format         # Format files with Oxfmt
+npm run format:check   # Check formatting
 npm run test:license   # Validate allowed production dependency licenses
 npm run test:types     # Type-check all repo TypeScript, including the published-surface fixture
 npm run test:artifacts # Verify exports and npm pack contents from ./out
@@ -69,18 +53,7 @@ npm run test:docker    # Build Docker image and run tests in the container
 
 ### What `npm test` covers
 
-`npm test` is the main validation command before a pull request. It runs these steps:
-
-1. `npm run clean`
-2. `npm run lint`
-3. `npm run codemap:check`
-4. `npm run test:license`
-5. `npm run build`
-6. `npm run test:types`
-7. `npm run test:artifacts`
-8. `vitest run --coverage`
-
-If you run only one command before you open a pull request, run `npm test`.
+`npm test` is the main validation command before a pull request. It checks formatting, lint, and production dependency licenses. It also checks the build, consumer types, package artifacts, and test coverage.
 
 ## Fast local iteration
 
@@ -150,8 +123,6 @@ CI behavior:
 - `test.yml` runs one job on `ubuntu-24.04`.
 - CI upgrades to `npm@latest` before it installs dependencies. `publish.yml` does the same upgrade before `prepublishOnly`. Thus, an npm version that breaks the release tooling causes a failure in CI, not only during a publish.
 - CI installs dependencies with `npm ci`.
-- CI runs `npm run lint`.
-- CI runs `npm run test:license`.
 - CI runs `npm test`.
 
 `npm test` includes the build, the consumer type verification, the artifact verification, and the coverage. Thus, we recommend that you use it as the canonical local check before you ask for a review.

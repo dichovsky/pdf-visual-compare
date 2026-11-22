@@ -49,8 +49,12 @@ test(`should change diff output when excludedAreaColor changes`, async () => {
 
     pdfToPngMock.mockReset();
     pdfToPngMock
+        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1 }])
+        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1 }])
         .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }])
         .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: expectedPageContent }])
+        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1 }])
+        .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1 }])
         .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: actualPageContent }])
         .mockResolvedValueOnce([{ name: 'page-1.png', pageNumber: 1, content: expectedPageContent }]);
 

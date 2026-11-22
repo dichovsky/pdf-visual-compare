@@ -4,21 +4,19 @@ import { buildPageNumberComparisonPlan } from './internal/pageComparisonPlan.js'
 import { summarizePageResults } from './internal/mismatchStats.js';
 import { normalizeComparisonOptions } from './internal/normalizeComparisonOptions.js';
 import { normalizePdfInput } from './internal/normalizePdfInput.js';
-import { listRenderedPageNumbers, PlannedPdfPages, renderPdfPage } from './internal/renderPdfPages.js';
-import type { NormalizedComparePdfOptions, PageComparisonPlanEntry, RenderedPngPageOutput } from './internal/types.js';
+import { listRenderedPageNumbers, renderPdfPage } from './internal/renderPdfPages.js';
+import type { NormalizedComparePdfOptions, PageComparisonPlanEntry } from './internal/types.js';
 import type { ComparePdfOptions } from './types/ComparePdfOptions.js';
 import type { ComparePdfDetailedResult } from './types/ComparePdfDetailedResult.js';
 import type { ComparePdfPageResult } from './types/ComparePdfPageResult.js';
 import type { PdfInput } from './types/PdfInput.js';
-import type { PdfToPngOptions, PngPageOutput } from 'pdf-to-png-converter';
 
 /**
  * Compares two PDF inputs and returns a boolean. The boolean is `true` when the two PDFs are equal.
  *
  * The supported PDF inputs are file paths, `Buffer`, `ArrayBuffer`, and `SharedArrayBuffer`.
  * By default, string paths are trusted inputs that the caller controls. To keep them in a
- * specified folder, set `options.allowedInputRoot`. The library normalizes `SharedArrayBuffer`
- * inputs to `ArrayBuffer` before the renderer starts.
+ * specified folder, set `options.allowedInputRoot`. The renderer copies binary inputs before it opens each PDF.
  *
  * The library writes diff images only when you set `options.writeDiffs` to `true`. When you enable
  * `options.writeDiffs`, `options.diffsOutputFolder` is a trusted folder on a trusted local file system.
@@ -53,8 +51,7 @@ export async function comparePdf(actualPdf: unknown, expectedPdf: unknown, opts?
  *
  * The supported PDF inputs are file paths, `Buffer`, `ArrayBuffer`, and `SharedArrayBuffer`.
  * By default, string paths are trusted inputs that the caller controls. To keep them in a
- * specified folder, set `options.allowedInputRoot`. The library normalizes `SharedArrayBuffer`
- * inputs to `ArrayBuffer` before the renderer starts.
+ * specified folder, set `options.allowedInputRoot`. The renderer copies binary inputs before it opens each PDF.
  *
  * The library writes diff images only when you set `options.writeDiffs` to `true`.
  *
@@ -90,22 +87,22 @@ export async function comparePdfDetailed(
         normalizedOptions.allowedInputRoot,
     );
 
-    const actualPlanningPages: PlannedPdfPages = await listRenderedPageNumbers(
+    const actualPageNumbers = await listRenderedPageNumbers(
         normalizedActualPdf,
         normalizedOptions.pdfToPngConvertOpts,
         'actual',
     );
-    const expectedPlanningPages: PlannedPdfPages = await listRenderedPageNumbers(
+    const expectedPageNumbers = await listRenderedPageNumbers(
         normalizedExpectedPdf,
         normalizedOptions.pdfToPngConvertOpts,
         'expected',
     );
 
-    const actualPageNumberSet = new Set(actualPlanningPages.pageNumbers);
-    const expectedPageNumberSet = new Set(expectedPlanningPages.pageNumbers);
+    const actualPageNumberSet = new Set(actualPageNumbers);
+    const expectedPageNumberSet = new Set(expectedPageNumbers);
     const comparisonPlan: PageComparisonPlanEntry[] = buildPageNumberComparisonPlan(
-        actualPlanningPages.pageNumbers,
-        expectedPlanningPages.pageNumbers,
+        actualPageNumbers,
+        expectedPageNumbers,
         normalizedOptions.excludedAreas,
     );
     const selectedComparisonPlan = selectPlanPages(comparisonPlan, normalizedOptions.selectedPageNumbers);
@@ -113,8 +110,7 @@ export async function comparePdfDetailed(
 
     for (const planEntry of selectedComparisonPlan) {
         const actualPage = actualPageNumberSet.has(planEntry.pageNumber)
-            ? await resolvePlannedPage(
-                  actualPlanningPages.prefetchedPages.get(planEntry.pageNumber),
+            ? await renderPdfPage(
                   normalizedActualPdf,
                   normalizedOptions.pdfToPngConvertOpts,
                   planEntry.pageNumber,
@@ -122,8 +118,7 @@ export async function comparePdfDetailed(
               )
             : undefined;
         const expectedPage = expectedPageNumberSet.has(planEntry.pageNumber)
-            ? await resolvePlannedPage(
-                  expectedPlanningPages.prefetchedPages.get(planEntry.pageNumber),
+            ? await renderPdfPage(
                   normalizedExpectedPdf,
                   normalizedOptions.pdfToPngConvertOpts,
                   planEntry.pageNumber,
@@ -136,8 +131,8 @@ export async function comparePdfDetailed(
 
     return {
         isEqual: pages.every((page) => page.isEqual),
-        actualPageCount: actualPlanningPages.pageNumbers.length,
-        expectedPageCount: expectedPlanningPages.pageNumbers.length,
+        actualPageCount: actualPageNumbers.length,
+        expectedPageCount: expectedPageNumbers.length,
         compareThreshold: normalizedOptions.compareThreshold,
         compareThresholdPercent: normalizedOptions.compareThresholdPercent ?? null,
         diffsOutputFolder: normalizedOptions.writeDiffs ? normalizedOptions.diffsOutputFolder : null,
@@ -159,9 +154,9 @@ export async function comparePdfDetailed(
 function selectPlanPages(
     plan: readonly PageComparisonPlanEntry[],
     selectedPageNumbers: ReadonlySet<number> | undefined,
-): PageComparisonPlanEntry[] {
+): readonly PageComparisonPlanEntry[] {
     if (selectedPageNumbers === undefined) {
-        return [...plan];
+        return plan;
     }
 
     const selectedPlan = plan.filter((planEntry) => selectedPageNumbers.has(planEntry.pageNumber));
@@ -170,22 +165,4 @@ function selectPlanPages(
     }
 
     return selectedPlan;
-}
-
-async function resolvePlannedPage(
-    prefetchedPage: PngPageOutput | undefined,
-    pdfInput: PdfInput,
-    pdfToPngConvertOpts: PdfToPngOptions,
-    pageNumber: number,
-    sourceLabel: 'actual' | 'expected',
-): Promise<RenderedPngPageOutput | undefined> {
-    if (prefetchedPage && isRenderedPngPageOutput(prefetchedPage)) {
-        return prefetchedPage;
-    }
-
-    return renderPdfPage(pdfInput, pdfToPngConvertOpts, pageNumber, sourceLabel);
-}
-
-function isRenderedPngPageOutput(page: PngPageOutput): page is RenderedPngPageOutput {
-    return page.kind !== 'metadata' && Buffer.isBuffer(page.content);
 }

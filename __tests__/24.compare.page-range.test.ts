@@ -1,3 +1,4 @@
+import { mockPdfDocuments } from './helpers/mockPdfDocuments.js';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 const { comparePngMock, pdfToPngMock } = vi.hoisted(() => ({
@@ -20,9 +21,11 @@ beforeEach(() => {
 });
 
 test(`compares only the pages selected by a range spec, leaving page counts intact`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([renderedPage('a1', 1), renderedPage('a2', 2), renderedPage('a3', 3)])
-        .mockResolvedValueOnce([renderedPage('e1', 1), renderedPage('e2', 2), renderedPage('e3', 3)]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [renderedPage('a1', 1), renderedPage('a2', 2), renderedPage('a3', 3)],
+        [renderedPage('e1', 1), renderedPage('e2', 2), renderedPage('e3', 3)],
+    );
     comparePngMock.mockReturnValue(0);
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), { pages: '1,3' });
@@ -35,9 +38,11 @@ test(`compares only the pages selected by a range spec, leaving page counts inta
 });
 
 test(`accepts an explicit array of page numbers`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([renderedPage('a1', 1), renderedPage('a2', 2), renderedPage('a3', 3)])
-        .mockResolvedValueOnce([renderedPage('e1', 1), renderedPage('e2', 2), renderedPage('e3', 3)]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [renderedPage('a1', 1), renderedPage('a2', 2), renderedPage('a3', 3)],
+        [renderedPage('e1', 1), renderedPage('e2', 2), renderedPage('e3', 3)],
+    );
     comparePngMock.mockReturnValue(0);
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), { pages: [2] });
@@ -47,9 +52,7 @@ test(`accepts an explicit array of page numbers`, async () => {
 });
 
 test(`reports a selected page present in only one PDF as a missing counterpart`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([renderedPage('a1', 1), renderedPage('a2', 2)])
-        .mockResolvedValueOnce([renderedPage('e1', 1)]);
+    mockPdfDocuments(pdfToPngMock, [renderedPage('a1', 1), renderedPage('a2', 2)], [renderedPage('e1', 1)]);
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), { pages: '2' });
 
@@ -59,7 +62,7 @@ test(`reports a selected page present in only one PDF as a missing counterpart`,
 });
 
 test(`throws when the selection matches no rendered page in either PDF`, async () => {
-    pdfToPngMock.mockResolvedValueOnce([renderedPage('a1', 1)]).mockResolvedValueOnce([renderedPage('e1', 1)]);
+    mockPdfDocuments(pdfToPngMock, [renderedPage('a1', 1)], [renderedPage('e1', 1)]);
 
     await expect(comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), { pages: '5' })).rejects.toThrow(
         'pages selection matched no rendered page in either PDF.',
@@ -68,9 +71,11 @@ test(`throws when the selection matches no rendered page in either PDF`, async (
 });
 
 test(`ignores non-existent pages as long as the selection still matches at least one page`, async () => {
-    pdfToPngMock
-        .mockResolvedValueOnce([renderedPage('a1', 1), renderedPage('a2', 2)])
-        .mockResolvedValueOnce([renderedPage('e1', 1), renderedPage('e2', 2)]);
+    mockPdfDocuments(
+        pdfToPngMock,
+        [renderedPage('a1', 1), renderedPage('a2', 2)],
+        [renderedPage('e1', 1), renderedPage('e2', 2)],
+    );
     comparePngMock.mockReturnValue(0);
 
     const result = await comparePdfDetailed(Buffer.from('a'), Buffer.from('e'), { pages: '1,99' });

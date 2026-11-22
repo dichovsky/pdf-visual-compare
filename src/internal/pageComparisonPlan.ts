@@ -1,23 +1,5 @@
 import type { PageExclusion } from '../types/PageExclusion.js';
-import type { PageComparisonPlanEntry, RenderedPngPageOutput } from './types.js';
-
-export function buildPageComparisonPlan(
-    actualPdfPngPages: readonly RenderedPngPageOutput[],
-    expectedPdfPngPages: readonly RenderedPngPageOutput[],
-    excludedAreas: readonly PageExclusion[],
-): PageComparisonPlanEntry[] {
-    const actualPagesByNumber = indexPagesByNumber(actualPdfPngPages);
-    const expectedPagesByNumber = indexPagesByNumber(expectedPdfPngPages);
-    return buildPageNumberComparisonPlan(
-        [...actualPagesByNumber.keys()],
-        [...expectedPagesByNumber.keys()],
-        excludedAreas,
-    ).map((entry) => ({
-        ...entry,
-        actualPage: actualPagesByNumber.get(entry.pageNumber),
-        expectedPage: expectedPagesByNumber.get(entry.pageNumber),
-    }));
-}
+import type { PageComparisonPlanEntry } from './types.js';
 
 export function buildPageNumberComparisonPlan(
     actualPageNumbers: readonly number[],
@@ -33,10 +15,6 @@ export function buildPageNumberComparisonPlan(
             pageNumber,
             pageExclusion: exclusionsByPageNumber.get(pageNumber),
         }));
-}
-
-function indexPagesByNumber(pages: readonly RenderedPngPageOutput[]): Map<number, RenderedPngPageOutput> {
-    return new Map(pages.map((page) => [page.pageNumber, page]));
 }
 
 function indexPageExclusionsByNumber(excludedAreas: readonly PageExclusion[]): Map<number, PageExclusion> {

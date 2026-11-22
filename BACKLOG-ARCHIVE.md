@@ -19,3 +19,9 @@
 - [x] 🟠 ARCH: Extract shared `securePath` seam — `isPathWithinRoot` was duplicated verbatim in `normalizePdfInput.ts` and `diffOutputGuards.ts`, and the symlink-rejection walker existed as a second adapter inside `diffOutputGuards.ts`.
     - **Impl:** New `src/internal/securePath.ts` owns `isPathWithinRoot`, `pathExistsWithoutFollowingSymlinks`, `assertPathIsNotSymbolicLink`, and `assertPathAndAncestorsAreNotSymbolicLinks`; both prior callers (and the new render-output validator) import from the seam.
     - **Rat:** Two drifting adapters were a real seam; consolidating the CWE-59 / CWE-61 symlink-swap defense in one module ensures future fixes (e.g. the next sandbox callsite) land in a single place.
+- [x] 🟡 ARCH: Simplify page discovery and rendering.
+    - **Impl:** Discover page numbers from metadata and render selected pages on demand. Removed the prefetched-page branch.
+    - **Rat:** The renderer supports metadata-only discovery, so comparison can use one path for all pages.
+- [x] 🟢 ARCH: Remove the unused `buildPageComparisonPlan` function.
+    - **Impl:** Removed the function and its tests. Kept coverage for the page-number plan used by `comparePdfDetailed`.
+    - **Rat:** No production code called the removed function.

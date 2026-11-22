@@ -15,7 +15,8 @@ export type PdfRenderOptions = {
     viewportScale?: number;
 
     /**
-     * When `true`, PDF.js uses its built-in font renderer to draw glyphs as paths.
+     * PDF.js draws glyphs as paths in Node.js. The renderer accepts `false`, uses `true`,
+     * and emits the warning `PDF_TO_PNG_DISABLE_FONT_FACE_IGNORED` once per process.
      */
     disableFontFace?: boolean;
 

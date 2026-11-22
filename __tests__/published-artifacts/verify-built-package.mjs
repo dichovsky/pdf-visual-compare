@@ -59,7 +59,11 @@ function assertPackedArtifactContents() {
 
 function assertBinShim() {
     const manifest = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
-    assert.equal(manifest.bin?.['pdf-visual-compare'], './out/cli.js', 'Expected package.json bin to map to ./out/cli.js.');
+    assert.equal(
+        manifest.bin?.['pdf-visual-compare'],
+        './out/cli.js',
+        'Expected package.json bin to map to ./out/cli.js.',
+    );
 
     const cliSource = readFileSync(path.join(rootDir, 'out', 'cli.js'), 'utf8');
     assert.ok(cliSource.startsWith('#!/usr/bin/env node'), 'Expected built out/cli.js to start with a node shebang.');
