@@ -97,12 +97,12 @@ Categories:
 
 ### Products and packages
 
-| Term                                                                       | Category     | Meaning                                                  | Do not use                         |
-| -------------------------------------------------------------------------- | ------------ | -------------------------------------------------------- | ---------------------------------- |
-| `pdf-visual-compare`                                                       | Product name | This library and its command-line interface (CLI).       | "the tool", "the package"          |
-| `pdf-to-png-converter`                                                     | Product name | The dependency that renders PDF pages.                   | "the converter"                    |
-| `png-visual-compare`                                                       | Product name | The dependency that compares two PNG images.             | "pixelmatch" (a different package) |
-| PDF.js, `@napi-rs/canvas`                                                  | Product name | The renderer libraries that `pdf-to-png-converter` uses. | -                                  |
+| Term                                                                    | Category     | Meaning                                                  | Do not use                         |
+| ----------------------------------------------------------------------- | ------------ | -------------------------------------------------------- | ---------------------------------- |
+| `pdf-visual-compare`                                                    | Product name | This library and its command-line interface (CLI).       | "the tool", "the package"          |
+| `pdf-to-png-converter`                                                  | Product name | The dependency that renders PDF pages.                   | "the converter"                    |
+| `png-visual-compare`                                                    | Product name | The dependency that compares two PNG images.             | "pixelmatch" (a different package) |
+| PDF.js, `@napi-rs/canvas`                                               | Product name | The renderer libraries that `pdf-to-png-converter` uses. | -                                  |
 | Node.js, npm, TypeScript, Vitest, Oxlint, Oxfmt, Docker, GitHub Actions | Product name | Tools that this repository uses.                         | "Node" in descriptive text         |
 
 ### Comparison concepts

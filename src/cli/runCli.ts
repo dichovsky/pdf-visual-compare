@@ -14,11 +14,7 @@ export type CliIo = {
 export type CliDeps = {
     io: CliIo;
     version: string;
-    compare: (
-        actualPdf: string,
-        expectedPdf: string,
-        options: ComparePdfOptions,
-    ) => Promise<ComparePdfDetailedResult>;
+    compare: (actualPdf: string, expectedPdf: string, options: ComparePdfOptions) => Promise<ComparePdfDetailedResult>;
 };
 
 /**

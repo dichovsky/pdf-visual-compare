@@ -14,12 +14,20 @@ test('reports disallowed and unknown production licenses across platforms', ({ o
         license: 'MIT',
         dependencies: { permitted: version, restricted: version },
         optionalDependencies: { native: version },
-        devDependencies: { tooling: version },
+        devDependencies: { shared: version, tooling: version },
     };
     const packages = {
         '': manifest,
-        'node_modules/permitted': { version, license: '(MIT OR X11) AND BSD-3-Clause' },
+        'node_modules/permitted': {
+            version,
+            license: '(MIT OR X11) AND BSD-3-Clause',
+            dependencies: { shared: version },
+            peerDependencies: { required: version, tooling: version },
+            peerDependenciesMeta: { tooling: { optional: true } },
+        },
         'node_modules/restricted': { version, license: 'MIT AND GPL-3.0-only' },
+        'node_modules/shared': { version, license: 'GPL-3.0-only' },
+        'node_modules/required': { version, license: 'GPL-3.0-only', peer: true },
         'node_modules/native': { version, os: ['win32'], optional: true },
         'node_modules/tooling': { version, license: 'GPL-3.0-only', dev: true },
     };
@@ -31,6 +39,8 @@ test('reports disallowed and unknown production licenses across platforms', ({ o
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('restricted@1.0.0 declares an unapproved license: MIT AND GPL-3.0-only');
     expect(result.stderr).toContain('native@1.0.0 declares an unapproved license: NOASSERTION');
+    expect(result.stderr).toContain('shared@1.0.0 declares an unapproved license: GPL-3.0-only');
+    expect(result.stderr).toContain('required@1.0.0 declares an unapproved license: GPL-3.0-only');
     expect(result.stderr).not.toContain('permitted@');
     expect(result.stderr).not.toContain('tooling@');
 });

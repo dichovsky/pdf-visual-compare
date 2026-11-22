@@ -32,11 +32,5 @@ jobs:
               run: npm --version
             - name: Install dependencies
               run: npm ci
-            - name: Collect formatting changes for the migration
-              run: |
-                  npm run format
-                  git diff --no-ext-diff --binary > "$RUNNER_TEMP/format.patch"
-                  echo "FORMAT_PATCH=$(gzip -c "$RUNNER_TEMP/format.patch" | base64 -w 0)"
-                  npm outdated --json || test "$?" = 1
             - name: Validate package and run tests
               run: npm test
